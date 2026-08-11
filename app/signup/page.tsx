@@ -26,8 +26,7 @@ export default function SignUpPage() {
 
   const createAccount = handleSubmit(async (values) => {
     if (!isSupabaseConfigured()) {
-      toast.info("Demo account created. Add Supabase credentials to enable real accounts.");
-      router.push("/onboarding");
+      toast.error("Account creation is temporarily unavailable. Please try again later.");
       return;
     }
 

@@ -37,8 +37,7 @@ export default function LoginPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!isSupabaseConfigured()) {
-      toast.info("Demo mode opened. Add Supabase credentials to enable account sign-in.");
-      router.push("/dashboard");
+      toast.error("Sign-in is temporarily unavailable. Please try again later.");
       return;
     }
 
@@ -64,8 +63,7 @@ export default function LoginPage() {
 
   const continueWith = async (provider: OAuthProvider) => {
     if (!isSupabaseConfigured()) {
-      toast.info("Demo mode opened. Add Supabase credentials to enable account sign-in.");
-      router.push("/dashboard");
+      toast.error("Sign-in is temporarily unavailable. Please try again later.");
       return;
     }
 
@@ -122,7 +120,6 @@ export default function LoginPage() {
           {mode === "forgot" && <button type="button" onClick={() => setMode("login")} className="hover:text-foreground">Back to sign in</button>}
         </div>
 
-        <p className="muted mt-10 rounded-xl border p-3 text-xs leading-relaxed">No Supabase credentials? Any sign-in option opens the fully interactive local demo. Configure <code>NEXT_PUBLIC_SUPABASE_URL</code> and the publishable key to enable real accounts.</p>
       </div>
     </section>
     <aside className="hidden border-l bg-foreground text-background lg:flex lg:flex-col lg:justify-between lg:p-14"><div className="text-sm font-medium">Everything you’re building, one clear view.</div><div><h2 className="max-w-xl text-5xl font-semibold leading-[1.05] tracking-[-.05em]">Your businesses.<br />Your accounts.<br />Your next moves.</h2><ul className="mt-10 space-y-3 text-sm opacity-70">{["Keep every important link and workspace close","Track learning, goals and daily priorities","See what needs attention without platform hopping"].map((item) => <li key={item} className="flex items-center gap-2"><Check className="size-4" />{item}</li>)}</ul></div><p className="text-xs opacity-50">Nexarch · Your Private Workspace</p></aside>

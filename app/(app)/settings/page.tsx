@@ -18,11 +18,11 @@ import { accountSettingsSchema, changePasswordSchema } from "@/lib/validations";
 type AccountSettingsValues = z.input<typeof accountSettingsSchema>;
 type ChangePasswordValues = z.input<typeof changePasswordSchema>;
 
-const demoProfile: AccountSettingsValues = {
-  fullName: "Darshan Virani",
-  email: "darshan@example.com",
-  country: "Ireland",
-  contactNumber: "+353 87 123 4567",
+const emptyProfile: AccountSettingsValues = {
+  fullName: "",
+  email: "",
+  country: "",
+  contactNumber: "",
   timezone: "Europe/Dublin",
 };
 
@@ -39,7 +39,7 @@ export default function SettingsPage() {
     handleSubmit: handleProfileSubmit,
     reset: resetProfile,
     formState: { errors: profileErrors },
-  } = useForm<AccountSettingsValues>({ resolver: zodResolver(accountSettingsSchema), defaultValues: demoProfile });
+  } = useForm<AccountSettingsValues>({ resolver: zodResolver(accountSettingsSchema), defaultValues: emptyProfile });
 
   const {
     register: registerPassword,
@@ -86,8 +86,7 @@ export default function SettingsPage() {
 
   const saveProfile = handleProfileSubmit(async (values) => {
     if (!isSupabaseConfigured()) {
-      resetProfile(values);
-      toast.success("Profile preferences saved in demo mode");
+      toast.error("Profile updates are temporarily unavailable. Please try again later.");
       return;
     }
 
@@ -134,8 +133,7 @@ export default function SettingsPage() {
 
   const changePassword = handlePasswordSubmit(async (values) => {
     if (!isSupabaseConfigured()) {
-      resetPassword();
-      toast.success("Password updated in demo mode");
+      toast.error("Password updates are temporarily unavailable. Please try again later.");
       return;
     }
     setPasswordSaving(true);

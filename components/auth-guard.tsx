@@ -8,10 +8,13 @@ import { NexarchLoader } from "./nexarch-loader";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [ready, setReady] = useState(!isSupabaseConfigured());
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured()) {
+      router.replace("/login");
+      return;
+    }
     const supabase = createClient();
     let active = true;
 
