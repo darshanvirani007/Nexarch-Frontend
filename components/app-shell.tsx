@@ -113,11 +113,15 @@ function Header({ openMobile, openCommand }: { openMobile: () => void; openComma
       <button onClick={openCommand} className="muted hidden h-10 w-full max-w-md items-center gap-2 rounded-xl border bg-[var(--panel)] px-3 text-left text-sm transition hover:border-foreground/20 sm:flex">
         <Search className="size-4" /><span>Search Nexarch</span><kbd className="ml-auto rounded border px-1.5 py-0.5 text-[10px]">⌘ K</kbd>
       </button>
-      <div className="ml-auto flex items-center gap-2">
-        <p className="flex min-w-0 items-center gap-2 rounded-xl border bg-[var(--panel)] py-1 pl-3 pr-1.5 shadow-sm backdrop-blur-xl" aria-label={`Hello, ${profileName}`}>
-          <span className="hidden text-sm font-semibold tracking-[-.015em] text-foreground sm:inline">Hello,</span>
-          <strong className="max-w-28 truncate rounded-lg bg-foreground px-2.5 py-1.5 text-xs font-semibold tracking-[.01em] text-background shadow-sm sm:max-w-36">{profileName}</strong>
+      <div className="ml-auto flex items-center gap-3">
+        <p className="flex min-w-0 items-center gap-2" aria-label={`Hello, ${profileName}`}>
+          <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-lg border bg-foreground/[.045] text-[10px] font-semibold uppercase text-foreground shadow-sm">
+            {profileName.charAt(0)}
+          </span>
+          <span className="hidden text-sm font-semibold tracking-[-.015em] text-foreground/65 sm:inline">Hello,</span>
+          <strong className="max-w-24 truncate text-sm font-semibold tracking-[-.02em] text-foreground sm:max-w-36">{profileName}</strong>
         </p>
+        <span className="h-5 w-px bg-foreground/12" aria-hidden="true" />
         <IconButton label="Toggle theme" onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>{mounted && resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}</IconButton>
       </div>
     </header>
