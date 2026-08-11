@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   const parsed = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
   if (!parsed.success) return NextResponse.json({ error: "Invalid business" }, { status: 400 });
   try {
-    const db = getDb();
+    const db = await getDb();
     const [vault] = await db.select().from(encryptedKeyVaults).where(and(
       eq(encryptedKeyVaults.ownerEmail, await ownerEmail()),
       eq(encryptedKeyVaults.businessId, parsed.data.businessId),
@@ -38,7 +38,7 @@ export async function PUT(request: Request) {
   const parsed = vaultSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid encrypted vault" }, { status: 400 });
   try {
-    const db = getDb();
+    const db = await getDb();
     const owner = await ownerEmail();
     const id = `${owner}:${parsed.data.businessId}`;
     await db.insert(encryptedKeyVaults).values({

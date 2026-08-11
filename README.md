@@ -404,6 +404,23 @@ NEXT_PUBLIC_API_URL=https://nexarch-api.onrender.com/api/v1
 
 Updating local `.env.local` does not update the deployed website. Production variables must be changed in the hosting environment, followed by a new deployment when required.
 
+### Deploying on Vercel
+
+The repository includes `vercel.json`, which tells Vercel to run the standard Next.js build instead of the Sites/Vinext build. Import the GitHub repository, keep the Framework Preset set to **Next.js**, and leave the Output Directory empty so Vercel uses `.next` automatically.
+
+Add these variables in **Vercel → Project Settings → Environment Variables** for Production and Preview:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-publishable-anon-key
+NEXT_PUBLIC_APP_URL=https://your-vercel-domain.vercel.app
+NEXT_PUBLIC_API_URL=https://nexarch-api.onrender.com/api/v1
+```
+
+Redeploy after adding or changing environment variables. Also add the Vercel URL to the Supabase Authentication allowed redirect URLs.
+
+The encrypted Development Key Vault currently depends on the Sites D1 database binding and is unavailable on Vercel. The Supabase/Laravel-backed profile, links, businesses, learning, goals, tasks, and job applications are unaffected.
+
 ## Common problems
 
 ### The loader stays visible for a while

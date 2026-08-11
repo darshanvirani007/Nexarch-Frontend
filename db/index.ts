@@ -1,8 +1,12 @@
-import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
-export function getDb() {
+export async function getDb() {
+  if (process.env.VERCEL) {
+    throw new Error("The encrypted key vault requires the Sites D1 database binding.");
+  }
+
+  const { env } = await import("cloudflare:workers");
   const runtimeEnv = env as unknown as { DB?: D1Database };
   if (!runtimeEnv.DB) {
     throw new Error(
