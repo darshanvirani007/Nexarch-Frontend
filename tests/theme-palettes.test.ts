@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isThemePalette, resolveThemePalette, themePalettes } from "../lib/theme-palettes";
+import { isDensity, isThemePalette, resolveDensity, resolveThemePalette, themePalettes } from "../lib/theme-palettes";
 
 describe("theme palettes", () => {
   it("offers restrained business palettes with graphite as the default", () => {
@@ -19,5 +19,11 @@ describe("theme palettes", () => {
     expect(resolveThemePalette("forest")).toBe("forest");
     expect(isThemePalette("neon")).toBe(false);
     expect(resolveThemePalette("neon")).toBe("graphite");
+  });
+
+  it("supports a real comfortable or compact density preference", () => {
+    expect(isDensity("compact")).toBe(true);
+    expect(resolveDensity("compact")).toBe("compact");
+    expect(resolveDensity("unknown")).toBe("comfortable");
   });
 });

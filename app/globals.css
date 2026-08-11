@@ -3,14 +3,14 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f2f2f0;
+  --background: #e5e5e1;
   --foreground: #111110;
-  --panel: rgba(255, 255, 255, 0.76);
-  --panel-solid: #fff;
-  --muted: #6f6f69;
-  --line: rgba(20, 20, 18, 0.11);
-  --line-strong: rgba(20, 20, 18, 0.18);
-  --panel-highlight: rgba(255, 255, 255, .58);
+  --panel: rgba(244, 244, 240, .82);
+  --panel-solid: #f1f1ed;
+  --muted: #666660;
+  --line: rgba(20, 20, 18, .13);
+  --line-strong: rgba(20, 20, 18, .21);
+  --panel-highlight: rgba(255, 255, 255, .5);
   --soft-shadow: 0 1px 2px rgba(10, 10, 8, .035), 0 12px 30px rgba(10, 10, 8, .045), 0 32px 70px rgba(10, 10, 8, .035);
   --raised-shadow: 0 2px 4px rgba(10, 10, 8, .045), 0 18px 42px rgba(10, 10, 8, .075), 0 38px 76px rgba(10, 10, 8, .045);
   --motion-fast: 140ms;
@@ -33,14 +33,14 @@
 }
 
 html[data-palette="slate"] {
-  --background: #eef1f3;
+  --background: #dbe2e6;
   --foreground: #11161a;
-  --panel: rgba(249, 251, 252, .78);
-  --panel-solid: #f9fbfc;
-  --muted: #68727a;
-  --line: rgba(20, 29, 35, .11);
-  --line-strong: rgba(20, 29, 35, .19);
-  --panel-highlight: rgba(255, 255, 255, .64);
+  --panel: rgba(238, 243, 245, .82);
+  --panel-solid: #edf1f3;
+  --muted: #5f6971;
+  --line: rgba(20, 29, 35, .13);
+  --line-strong: rgba(20, 29, 35, .21);
+  --panel-highlight: rgba(255, 255, 255, .52);
 }
 
 html.dark[data-palette="slate"] {
@@ -55,14 +55,14 @@ html.dark[data-palette="slate"] {
 }
 
 html[data-palette="navy"] {
-  --background: #eef1f6;
+  --background: #dae2ee;
   --foreground: #101724;
-  --panel: rgba(249, 251, 255, .78);
-  --panel-solid: #f9fbff;
-  --muted: #657083;
-  --line: rgba(19, 35, 60, .11);
-  --line-strong: rgba(19, 35, 60, .19);
-  --panel-highlight: rgba(255, 255, 255, .66);
+  --panel: rgba(237, 242, 249, .82);
+  --panel-solid: #ebf0f7;
+  --muted: #5b687b;
+  --line: rgba(19, 35, 60, .13);
+  --line-strong: rgba(19, 35, 60, .21);
+  --panel-highlight: rgba(255, 255, 255, .54);
 }
 
 html.dark[data-palette="navy"] {
@@ -77,14 +77,14 @@ html.dark[data-palette="navy"] {
 }
 
 html[data-palette="forest"] {
-  --background: #eff3f0;
+  --background: #d9e5dc;
   --foreground: #111a15;
-  --panel: rgba(249, 252, 250, .78);
-  --panel-solid: #f9fcfa;
-  --muted: #66746b;
-  --line: rgba(20, 46, 31, .11);
-  --line-strong: rgba(20, 46, 31, .19);
-  --panel-highlight: rgba(255, 255, 255, .65);
+  --panel: rgba(237, 244, 239, .82);
+  --panel-solid: #eaf2ed;
+  --muted: #5d6c63;
+  --line: rgba(20, 46, 31, .13);
+  --line-strong: rgba(20, 46, 31, .21);
+  --panel-highlight: rgba(255, 255, 255, .53);
 }
 
 html.dark[data-palette="forest"] {
@@ -99,14 +99,14 @@ html.dark[data-palette="forest"] {
 }
 
 html[data-palette="burgundy"] {
-  --background: #f4f0f1;
+  --background: #eadde1;
   --foreground: #201216;
-  --panel: rgba(253, 250, 251, .78);
-  --panel-solid: #fdfafb;
-  --muted: #78696d;
-  --line: rgba(57, 22, 32, .11);
-  --line-strong: rgba(57, 22, 32, .19);
-  --panel-highlight: rgba(255, 255, 255, .66);
+  --panel: rgba(246, 235, 238, .82);
+  --panel-solid: #f3e8eb;
+  --muted: #706065;
+  --line: rgba(57, 22, 32, .13);
+  --line-strong: rgba(57, 22, 32, .21);
+  --panel-highlight: rgba(255, 255, 255, .53);
 }
 
 html.dark[data-palette="burgundy"] {
@@ -121,14 +121,14 @@ html.dark[data-palette="burgundy"] {
 }
 
 html[data-palette="espresso"] {
-  --background: #f3f0ec;
+  --background: #e6ddd3;
   --foreground: #1e1712;
-  --panel: rgba(252, 250, 247, .78);
-  --panel-solid: #fcfaf7;
-  --muted: #756c64;
-  --line: rgba(49, 34, 23, .11);
-  --line-strong: rgba(49, 34, 23, .19);
-  --panel-highlight: rgba(255, 255, 255, .65);
+  --panel: rgba(244, 237, 229, .82);
+  --panel-solid: #f0e8df;
+  --muted: #6d635a;
+  --line: rgba(49, 34, 23, .13);
+  --line-strong: rgba(49, 34, 23, .21);
+  --panel-highlight: rgba(255, 255, 255, .52);
 }
 
 html.dark[data-palette="espresso"] {
@@ -140,6 +140,12 @@ html.dark[data-palette="espresso"] {
   --line: rgba(242, 230, 219, .10);
   --line-strong: rgba(242, 230, 219, .18);
   --panel-highlight: rgba(246, 235, 225, .045);
+}
+
+html[data-density="compact"] {
+  /* Tailwind spacing utilities use this token, so compact mode tightens the
+     existing layout consistently without changing typography or structure. */
+  --spacing: .225rem;
 }
 
 @theme inline {

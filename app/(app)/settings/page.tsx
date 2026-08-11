@@ -15,7 +15,7 @@ import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
 import type { ProfileResponse } from "@/lib/api/mappers";
 import { accountSettingsSchema, changePasswordSchema } from "@/lib/validations";
 import { useThemePalette } from "@/components/theme-palette-provider";
-import { isThemePalette, themePalettes } from "@/lib/theme-palettes";
+import { densityOptions, isDensity, isThemePalette, themePalettes } from "@/lib/theme-palettes";
 
 type AccountSettingsValues = z.input<typeof accountSettingsSchema>;
 type ChangePasswordValues = z.input<typeof changePasswordSchema>;
@@ -30,7 +30,7 @@ const emptyProfile: AccountSettingsValues = {
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
-  const { palette, setPalette } = useThemePalette();
+  const { palette, setPalette, density, setDensity } = useThemePalette();
   const router = useRouter();
   const [profileLoading, setProfileLoading] = useState(isSupabaseConfigured());
   const [profileSaving, setProfileSaving] = useState(false);
@@ -184,7 +184,7 @@ export default function SettingsPage() {
         <div className="panel grid gap-4 rounded-[22px] p-6 sm:grid-cols-3">
           <Field label="Theme"><SelectControl value={theme} onValueChange={setTheme} options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }, { value: "system", label: "System" }]} /></Field>
           <Field label="Colour palette"><SelectControl value={palette} onValueChange={(value) => { if (isThemePalette(value)) setPalette(value); }} options={themePalettes} /></Field>
-          <Field label="Density"><SelectControl options={["Comfortable", "Compact"]} /></Field>
+          <Field label="Density"><SelectControl value={density} onValueChange={(value) => { if (isDensity(value)) setDensity(value); }} options={densityOptions} /></Field>
         </div>
       </section>
       <section><SectionHeading title="Session" /><div className="panel flex items-center justify-between gap-4 rounded-[22px] p-6"><div><p className="text-sm font-medium">Sign out securely</p><p className="muted mt-1 text-xs">End this session on this device.</p></div><Button variant="secondary" onClick={logout}><LogOut className="size-4" /> Sign out</Button></div></section>
