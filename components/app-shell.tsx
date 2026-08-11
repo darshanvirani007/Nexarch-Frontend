@@ -15,6 +15,8 @@ import { AuthGuard } from "./auth-guard";
 import { BrandMark } from "./brand-mark";
 import { NexarchLoader } from "./nexarch-loader";
 import { Button, IconButton, Modal } from "./ui";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { profileFirstName } from "@/lib/profile-name";
 
 const navigation = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -86,9 +88,25 @@ function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (val
 function Header({ openMobile, openCommand }: { openMobile: () => void; openCommand: () => void }) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [profileName, setProfileName] = useState("there");
   // Theme resolution is browser-only; defer the icon until after hydration.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    let active = true;
+    const supabase = createClient();
+    void supabase.auth.getUser().then(({ data }) => {
+      if (active) setProfileName(profileFirstName(data.user));
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setProfileName(profileFirstName(session?.user));
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
   return (
     <header className="topbar sticky top-0 z-20 flex h-[72px] items-center gap-3 border-b px-4 backdrop-blur-xl sm:px-6 lg:px-8">
       <IconButton label="Open navigation" onClick={openMobile} className="lg:hidden"><Menu className="size-4" /></IconButton>
@@ -96,6 +114,10 @@ function Header({ openMobile, openCommand }: { openMobile: () => void; openComma
         <Search className="size-4" /><span>Search Nexarch</span><kbd className="ml-auto rounded border px-1.5 py-0.5 text-[10px]">⌘ K</kbd>
       </button>
       <div className="ml-auto flex items-center gap-2">
+        <p className="flex min-w-0 items-baseline gap-1 text-sm" aria-label={`Hello, ${profileName}`}>
+          <span className="muted hidden sm:inline">Hello,</span>
+          <strong className="max-w-28 truncate font-semibold tracking-[-.01em] text-foreground sm:max-w-36">{profileName}</strong>
+        </p>
         <IconButton label="Toggle theme" onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>{mounted && resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}</IconButton>
       </div>
     </header>
