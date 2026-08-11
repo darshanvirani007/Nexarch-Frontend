@@ -115,10 +115,7 @@ function Header({ openMobile, openCommand }: { openMobile: () => void; openComma
       </button>
       <div className="ml-auto flex items-center gap-3">
         <p className="flex min-w-0 items-center gap-2" aria-label={`Hello, ${profileName}`}>
-          <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-lg border bg-foreground/[.045] text-[10px] font-semibold uppercase text-foreground shadow-sm">
-            {profileName.charAt(0)}
-          </span>
-          <span className="hidden text-sm font-semibold tracking-[-.015em] text-foreground/65 sm:inline">Hello,</span>
+          <span className="text-sm font-semibold tracking-[-.02em] text-foreground">Hello,</span>
           <strong className="max-w-24 truncate text-sm font-semibold tracking-[-.02em] text-foreground sm:max-w-36">{profileName}</strong>
         </p>
         <span className="h-5 w-px bg-foreground/12" aria-hidden="true" />
