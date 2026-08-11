@@ -33,7 +33,7 @@ function Sidebar({ mobile, close }: { mobile?: boolean; close?: () => void }) {
     <aside className={mobile ? "flex h-full flex-col p-4" : "sidebar-shell fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r p-4 lg:flex"}>
       <Link href="/dashboard" className="mb-7 flex items-center gap-3 px-2 py-2" onClick={close}>
         <BrandMark />
-        <span><span className="block text-sm font-semibold">Nexarch</span><span className="muted block text-[11px]">Your Personal Operating System</span></span>
+        <span><span className="block text-sm font-semibold">Nexarch</span><span className="muted block text-[11px]">Your Private Workspace</span></span>
       </Link>
       <nav className="flex-1 space-y-1" aria-label="Main navigation">
         {navigation.map(({ label, href, icon: Icon }) => {

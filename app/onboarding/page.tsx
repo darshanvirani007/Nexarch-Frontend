@@ -7,7 +7,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { Button, Field, inputClass, ProgressBar, SelectControl } from "@/components/ui";
 
 const steps = [
-  { title: "Build your personal operating system", description: "Choose the areas you want Nexarch to help you keep track of.", icon: CircleUserRound },
+  { title: "Build your private workspace", description: "Choose the areas you want Nexarch to help you keep track of.", icon: CircleUserRound },
   { title: "Your businesses", description: "Add the first business you want to keep visible. The others are optional.", icon: Building2 },
   { title: "Your learning", description: "Add something you are learning now, or skip it for later.", icon: Goal },
   { title: "Your preferences", description: "Choose how Nexarch should look and which updates you want to see.", icon: LayoutDashboard },

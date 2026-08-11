@@ -17,25 +17,25 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: {
-    default: "Nexarch — Your Personal Operating System",
+    default: "Nexarch — Your Private Workspace",
     template: "%s · Nexarch",
   },
   description:
-    "Nexarch brings your businesses, stores, accounts, learning, goals and important updates into one clear personal operating system.",
+    "Nexarch brings your businesses, accounts, links, learning, goals and tasks together in one clear private workspace.",
   icons: {
     icon: [{ url: "/nexarch-mark.svg", type: "image/svg+xml" }],
     shortcut: "/nexarch-mark.svg",
   },
   openGraph: {
-    title: "Nexarch — Your Personal Operating System",
-    description: "Nexarch brings your businesses, stores, accounts, learning, goals and important updates into one clear personal operating system.",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Nexarch — Your Personal Operating System" }],
+    title: "Nexarch — Your Private Workspace",
+    description: "Nexarch brings your businesses, accounts, links, learning, goals and tasks together in one clear private workspace.",
+    images: [{ url: "/og-v2.png", width: 1731, height: 909, alt: "Nexarch — Your Private Workspace" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nexarch — Your Personal Operating System",
-    description: "Nexarch brings your businesses, stores, accounts, learning, goals and important updates into one clear personal operating system.",
-    images: ["/og.png"],
+    title: "Nexarch — Your Private Workspace",
+    description: "Nexarch brings your businesses, accounts, links, learning, goals and tasks together in one clear private workspace.",
+    images: ["/og-v2.png"],
   },
 };
 

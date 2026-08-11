@@ -1,6 +1,6 @@
 # Nexarch
 
-**Your Personal Operating System**
+**Your Private Workspace**
 
 Everything you are building, one clear view.
 
