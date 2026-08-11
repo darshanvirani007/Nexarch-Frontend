@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown, ChevronUp, Eye, EyeOff, KeyRound, LockKeyhole, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button, Field, inputClass, Modal, SectionHeading } from "@/components/ui";
-import { decryptVault, encryptVault, type EncryptedVault, type VaultKey } from "@/lib/key-vault";
+import { decryptVault, encryptVault, loadEncryptedVault, saveEncryptedVault, type EncryptedVault, type VaultKey } from "@/lib/key-vault";
 
 export function BusinessKeyVault({ businessId }: { businessId: string }) {
   const [expanded, setExpanded] = useState(false);
-  const [vault, setVault] = useState<EncryptedVault | null>(null);
+  const [vault, setVault] = useState<EncryptedVault | null>(() => loadEncryptedVault(businessId));
   const [keys, setKeys] = useState<VaultKey[] | null>(null);
   const [password, setPassword] = useState("");
   const [unlockOpen, setUnlockOpen] = useState(false);
@@ -17,13 +17,6 @@ export function BusinessKeyVault({ businessId }: { businessId: string }) {
   const [name, setName] = useState("");
   const [value, setValue] = useState("");
   const [visible, setVisible] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    fetch(`/api/key-vault?businessId=${encodeURIComponent(businessId)}`)
-      .then(async (response) => response.ok ? response.json() as Promise<EncryptedVault | null> : null)
-      .then(setVault)
-      .catch(() => setVault(null));
-  }, [businessId]);
 
   const unlock = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -39,12 +32,7 @@ export function BusinessKeyVault({ businessId }: { businessId: string }) {
 
   const save = async (nextKeys: VaultKey[]) => {
     const encrypted = await encryptVault(nextKeys, password);
-    const response = await fetch("/api/key-vault", {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ businessId, ...encrypted }),
-    });
-    if (!response.ok) throw new Error("Save failed");
+    saveEncryptedVault(businessId, encrypted);
     setVault(encrypted);
     setKeys(nextKeys);
   };
@@ -83,7 +71,7 @@ export function BusinessKeyVault({ businessId }: { businessId: string }) {
   return (
     <section>
       <button type="button" onClick={() => setExpanded((value) => !value)} className="flex w-full items-center justify-between rounded-2xl border bg-foreground/[.02] px-5 py-4 text-left transition hover:bg-foreground/[.04]" aria-expanded={expanded}>
-        <span className="flex items-center gap-3"><LockKeyhole className="size-4" /><span><span className="block font-semibold">Development keys</span><span className="muted mt-0.5 block text-xs">Encrypted API keys and development secrets</span></span></span>
+        <span className="flex items-center gap-3"><LockKeyhole className="size-4" /><span><span className="block font-semibold">Development keys</span><span className="muted mt-0.5 block text-xs">Encrypted API keys and development secrets saved on this browser</span></span></span>
         {expanded ? <ChevronUp className="muted size-4" /> : <ChevronDown className="muted size-4" />}
       </button>
       {expanded && (

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { BrandMark } from "@/components/brand-mark";
 import { InlineLoader } from "@/components/nexarch-loader";
 import { Button, Field, inputClass } from "@/components/ui";
+import { buildAuthCallbackUrl } from "@/lib/auth-redirect";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type AuthMode = "login" | "forgot";
@@ -45,8 +46,16 @@ export default function LoginPage() {
     const supabase = createClient();
 
     if (mode === "forgot") {
+      let redirectTo: string;
+      try {
+        redirectTo = buildAuthCallbackUrl("/reset-password");
+      } catch {
+        setLoading(false);
+        toast.error("Password recovery is temporarily unavailable. Please try again later.");
+        return;
+      }
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+        redirectTo,
       });
       setLoading(false);
       if (error) return toast.error(error.message);
@@ -68,9 +77,17 @@ export default function LoginPage() {
     }
 
     setLoadingProvider(provider);
+    let redirectTo: string;
+    try {
+      redirectTo = buildAuthCallbackUrl("/dashboard");
+    } catch {
+      setLoadingProvider(null);
+      toast.error("Sign-in is temporarily unavailable. Please try again later.");
+      return;
+    }
     const { error } = await createClient().auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/dashboard` },
+      options: { redirectTo },
     });
 
     if (error) {

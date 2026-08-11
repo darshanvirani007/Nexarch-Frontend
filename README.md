@@ -6,7 +6,7 @@ Everything you are building, one clear view.
 
 Nexarch brings your businesses, important links, learning, goals, tasks, job applications, and store updates into one private dashboard. It does not replace the services you already use. It gives you one place to find them and keep track of what matters.
 
-- Live frontend: [nexarch-command-center.darshanvirani2468.chatgpt.site](https://nexarch-command-center.darshanvirani2468.chatgpt.site)
+- Live frontend: [nexarch-frontend.vercel.app](https://nexarch-frontend.vercel.app)
 - Live Laravel API: [nexarch-api.onrender.com/api/v1](https://nexarch-api.onrender.com/api/v1)
 
 > This repository contains the **frontend application**. The Laravel API is a separate project, and the main application data is stored in Supabase.
@@ -52,7 +52,7 @@ Changing only an environment variable does not create this flow automatically. T
 | Social accounts | Social profiles connected to a business | Laravel API + Supabase |
 | Business notes | One private note for each business | Laravel API + Supabase |
 | Website checks | Checks the configured website and stores its latest result | Laravel API + Supabase |
-| Development key vault | Encrypts secret values in the browser before saving them | Encrypted Sites D1 storage |
+| Development key vault | Encrypts secret values in the browser before saving them | Encrypted browser-local storage |
 | Learning | Courses, certifications, and books with simple completion status | Laravel API + Supabase |
 | Goals | Measurable financial, professional, and business goals | Laravel API + Supabase |
 | Tasks | Daily tasks, general tasks, and job applications | Laravel API + Supabase |
@@ -208,7 +208,7 @@ Add these URLs to Supabase's allowed redirect URLs:
 
 ```text
 http://localhost:3000/**
-https://nexarch-command-center.darshanvirani2468.chatgpt.site/**
+https://nexarch-frontend.vercel.app/**
 ```
 
 Password recovery and OAuth return through `/auth/callback`.
@@ -316,10 +316,10 @@ The key vault behaves differently from the rest of the application:
 1. The user chooses a vault password.
 2. The browser derives an encryption key using PBKDF2.
 3. Secret values are encrypted in the browser with AES-GCM.
-4. Only ciphertext, salt, and IV are sent to storage.
+4. Only ciphertext, salt, and IV are written to browser storage.
 5. The password is not saved or sent to the server.
 
-The encrypted vault currently uses the Sites D1 binding named `DB`. The application cannot recover a forgotten vault password because it never stores that password.
+The encrypted vault is stored only in the current browser. The application cannot recover a forgotten vault password because it never stores that password. Clearing browser storage removes the encrypted vault, and the vault does not automatically follow the user to another browser or device.
 
 Do not put production secrets in demo data, source files, screenshots, logs, or `.env.example`.
 
@@ -335,10 +335,8 @@ lib/supabase/            Supabase browser client
 lib/demo-data.ts         Non-Commerce demo content
 lib/commerce.ts          Demo Commerce data and types
 lib/validations.ts       Zod form validation rules
-db/                      D1 schema used by the encrypted key vault
 tests/                   Vitest test suite
 public/                  Nexarch mark and social-preview image
-worker/                   Sites/Cloudflare application worker entry
 ```
 
 Files you will commonly edit:
@@ -363,7 +361,6 @@ Run these from the project folder:
 | `npm run lint` | Checks code style and common React/Next.js problems |
 | `npm run typecheck` | Checks TypeScript without creating files |
 | `npm test` | Runs the Vitest test suite once |
-| `npm run db:generate` | Generates Drizzle changes for the D1 key-vault schema |
 
 ## Check your work before publishing
 
@@ -382,44 +379,18 @@ The current tests cover API URL safety, API data mapping, business child-record 
 
 ## Publishing the frontend
 
-This project is hosted with Sites and is connected through `.openai/hosting.json`.
-
-Before publishing:
-
-1. Make sure the four quality checks pass.
-2. Commit and push the exact code you want to publish.
-3. Save a new Sites version from that pushed commit.
-4. Publish the saved version.
-5. Wait until the deployment status says `succeeded`.
-6. Open the production URL and test sign-in plus one database-backed page.
-
-The production environment must contain:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-publishable-anon-key
-NEXT_PUBLIC_APP_URL=https://nexarch-command-center.darshanvirani2468.chatgpt.site
-NEXT_PUBLIC_API_URL=https://nexarch-api.onrender.com/api/v1
-```
-
-Updating local `.env.local` does not update the deployed website. Production variables must be changed in the hosting environment, followed by a new deployment when required.
-
-### Deploying on Vercel
-
-The repository includes `vercel.json`, which tells Vercel to run the standard Next.js build instead of the Sites/Vinext build. Import the GitHub repository, keep the Framework Preset set to **Next.js**, and leave the Output Directory empty so Vercel uses `.next` automatically.
+This project is deployed on Vercel as a standard Next.js application. Import the GitHub repository, keep the Framework Preset set to **Next.js**, and leave the Output Directory empty so Vercel uses `.next` automatically.
 
 Add these variables in **Vercel → Project Settings → Environment Variables** for Production and Preview:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-publishable-anon-key
-NEXT_PUBLIC_APP_URL=https://your-vercel-domain.vercel.app
+NEXT_PUBLIC_APP_URL=https://nexarch-frontend.vercel.app
 NEXT_PUBLIC_API_URL=https://nexarch-api.onrender.com/api/v1
 ```
 
-Redeploy after adding or changing environment variables. Also add the Vercel URL to the Supabase Authentication allowed redirect URLs.
-
-The encrypted Development Key Vault currently depends on the Sites D1 database binding and is unavailable on Vercel. The Supabase/Laravel-backed profile, links, businesses, learning, goals, tasks, and job applications are unaffected.
+Redeploy after adding or changing environment variables. Also add the Vercel URL to the Supabase Authentication allowed redirect URLs. Updating local `.env.local` does not update the deployed website.
 
 ## Common problems
 
@@ -475,9 +446,9 @@ Empty URLs are intentionally not sent.
 
 The UI may be running in demo mode, a save request may have failed, or the row may belong to a different user. Check DevTools **Network**, look for a successful API request, and then inspect the matching Supabase row.
 
-### Key vault says storage is unavailable
+### The key vault is empty on another browser or device
 
-The D1 database binding named `DB` is not available. The binding is supplied by the Sites environment in production. A plain local Next.js setup does not automatically provide it.
+The encrypted Development Key Vault is intentionally stored in the browser where it was created. It does not sync between browsers or devices. Clearing site data also removes that browser's encrypted vault.
 
 ### Google or Apple returns to the login page
 
@@ -506,9 +477,8 @@ Check the provider configuration, Supabase callback URL, and allowed redirect UR
 - Supabase Auth
 - Laravel read/write API
 - Supabase PostgreSQL
-- Drizzle ORM with Sites D1 for the encrypted key vault
 - Vitest
-- Sites/Cloudflare-compatible production runtime through Vinext
+- Vercel hosting with the standard Next.js runtime
 
 ## Safe next steps
 
