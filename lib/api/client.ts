@@ -1,4 +1,5 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { shouldRetryReadRequest } from "./retry";
 
 export class NexarchApiError extends Error {
   constructor(message: string, public readonly status: number) {
@@ -35,21 +36,35 @@ function errorMessage(payload: unknown) {
   return "The Nexarch API request failed.";
 }
 
+function waitForRetry() {
+  return new Promise((resolve) => setTimeout(resolve, 1_500));
+}
+
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const baseUrl = getApiBaseUrl();
   if (!baseUrl) throw new NexarchApiError("The Nexarch API is not configured.", 503);
 
   const token = await getAccessToken();
-  const response = await fetch(`${baseUrl}${path.startsWith("/") ? path : `/${path}`}`, {
-    ...init,
-    cache: "no-store",
-    headers: {
-      Accept: "application/json",
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      Authorization: `Bearer ${token}`,
-      ...init.headers,
-    },
-  });
+  const method = (init.method ?? "GET").toUpperCase();
+  let response: Response;
+  let attempt = 0;
+
+  while (true) {
+    response = await fetch(`${baseUrl}${path.startsWith("/") ? path : `/${path}`}`, {
+      ...init,
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        ...(init.body ? { "Content-Type": "application/json" } : {}),
+        Authorization: `Bearer ${token}`,
+        ...init.headers,
+      },
+    });
+
+    if (!shouldRetryReadRequest(method, response.status, attempt)) break;
+    attempt += 1;
+    await waitForRetry();
+  }
 
   if (response.status === 204) return undefined as T;
   const payload: unknown = await response.json().catch(() => null);

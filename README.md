@@ -425,7 +425,7 @@ The encrypted Development Key Vault currently depends on the Sites D1 database b
 
 ### The loader stays visible for a while
 
-The Laravel API is hosted on Render's free service. A sleeping service may need time to wake up. Wait briefly and try again. If the problem continues, check the Render service logs.
+The Laravel API is hosted on Render's free service. A sleeping service may need about a minute to wake up. Nexarch first checks the API, waits for the Vercel proxy, and automatically retries failed read-only requests once. Write requests are never retried automatically, preventing duplicate records. If the problem continues after the automatic retry, check the Render service logs.
 
 ### “Failed to fetch”
 

@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export function NexarchLoader({
   label = "Preparing your workspace",
-  description = "Securely loading your Nexarch data. This may take a moment.",
+  description = "Connecting securely and loading your Nexarch data. The first visit may take up to a minute.",
   fullScreen = false,
 }: {
   label?: string;

@@ -3,6 +3,11 @@ import { buildNexarchUpstreamUrl } from "@/lib/api/upstream";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
+const UPSTREAM_TIMEOUT_MS = 55_000;
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 async function forward(request: Request, context: RouteContext) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   if (!apiUrl) {
@@ -31,7 +36,7 @@ async function forward(request: Request, context: RouteContext) {
       body: hasBody ? await request.arrayBuffer() : undefined,
       cache: "no-store",
       redirect: "follow",
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
 
     const responseHeaders = new Headers();

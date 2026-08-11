@@ -170,6 +170,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     let active = true;
     const load = async () => {
       try {
+        await nexarchApi.get<unknown>("/health");
         const [activeBusinesses, archivedBusinesses, linkRows, learningRows, goalRows, dailyTaskRows, taskRows, jobRows] = await Promise.all([
           nexarchApi.list<BusinessRow>("businesses"),
           nexarchApi.list<BusinessRow>("businesses", "?archived=1"),
