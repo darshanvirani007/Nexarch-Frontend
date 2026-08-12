@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   businessSocialRecord, goalRecord, jobApplicationRecord, learningRecord, mapBusiness, mapGoal, mapJobApplication,
-  mapLearning, mapPersonalLink, taskRecord, type BusinessRow,
+  mapLearning, mapPersonalLink, preservePendingSocialVisibility, taskRecord, type BusinessRow,
 } from "../lib/api/mappers";
-import type { Goal, JobApplication, LearningItem, Task } from "../lib/types";
+import type { Business, Goal, JobApplication, LearningItem, Task } from "../lib/types";
 
 describe("Laravel API mappings", () => {
   it("maps an owned business workspace and its shortcuts", () => {
@@ -57,5 +57,28 @@ describe("Laravel API mappings", () => {
     expect(taskRecord(commerce, 0)).toBeNull();
     expect(businessSocialRecord({ id: "social", platform: "YouTube", accountName: "Nexarch", username: "nexarch", profileUrl: "https://youtube.com/@nexarch", showOnCard: false }, 0)).toMatchObject({ platform: "youtube", show_on_card: false, display_order: 0 });
     expect(goalRecord(goal, 0).payload).toMatchObject({ category: "financial", measure: "euro", unit: "Euro" });
+  });
+
+  it("normalises legacy booleans and preserves visibility when a refresh omits the field", () => {
+    const row: BusinessRow = {
+      id: "business-1",
+      name: "Nexarch Studio",
+      description: "Product studio",
+      is_archived: false,
+      display_order: 0,
+      social_links: [
+        { id: "social-false", business_id: "business-1", platform: "LinkedIn", username: null, url: "https://linkedin.com/company/nexarch", show_on_card: "false", display_order: 0, is_active: true },
+        { id: "social-missing", business_id: "business-1", platform: "YouTube", username: null, url: "https://youtube.com/@nexarch", display_order: 1, is_active: true },
+      ],
+    };
+    const refreshed = mapBusiness(row);
+    const pending: Business = {
+      ...refreshed,
+      socials: refreshed.socials.map((social) => social.id === "social-missing" ? { ...social, showOnCard: false } : social),
+    };
+    const reconciled = preservePendingSocialVisibility(refreshed, pending);
+
+    expect(reconciled.socials.find((social) => social.id === "social-false")?.showOnCard).toBe(false);
+    expect(reconciled.socials.find((social) => social.id === "social-missing")?.showOnCard).toBe(false);
   });
 });

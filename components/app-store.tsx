@@ -20,7 +20,7 @@ import { persistNewBusinessChildren } from "@/lib/api/business-persistence";
 import {
   businessLinkRecords, businessSocialRecord, goalRecord, jobApplicationRecord, learningRecord, mapBusiness, mapGoal, mapJobApplication,
   mapLearning, mapPersonalLink, mapSyncedRecord, mapTask, mapDailyTask, personalLinkRecord,
-  taskRecord, type BusinessLinkRow, type BusinessRow, type DailyTaskRow, type GoalRow,
+  preservePendingSocialVisibility, taskRecord, type BusinessLinkRow, type BusinessRow, type DailyTaskRow, type GoalRow,
   type JobApplicationRow, type LearningRow, type MyLinkRow, type SocialRow, type SyncedRecord,
   type TaskRow,
 } from "@/lib/api/mappers";
@@ -293,7 +293,10 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       if (JSON.stringify(businessLinkRecords(previous)) !== JSON.stringify(businessLinkRecords(next))) await persistLinks(previous, next);
       if (JSON.stringify(previous.socials) !== JSON.stringify(next.socials)) await persistSocials(previous, next);
       if (previous.notes !== next.notes) await nexarchApi.saveBusinessNote(id, next.notes);
-      const refreshed = mapBusiness(await nexarchApi.get<BusinessRow>(`/businesses/${id}`));
+      const refreshed = preservePendingSocialVisibility(
+        mapBusiness(await nexarchApi.get<BusinessRow>(`/businesses/${id}`)),
+        next,
+      );
       hydrateBusinesses(businessesRef.current.map((item) => item.id === id ? refreshed : item));
     })().catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Business changes could not be saved"));
   }, [hydrateBusinesses, live, persistLinks, persistSocials]);

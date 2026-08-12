@@ -15,7 +15,7 @@ export type BusinessLinkRow = {
 
 export type SocialRow = {
   id: string; business_id: string; platform: string; username: string | null; url: string;
-  show_on_card?: boolean; display_order: number; is_active: boolean;
+  show_on_card?: boolean | number | string | null; display_order: number; is_active: boolean;
 };
 
 export type WebsiteCheckRow = {
@@ -126,6 +126,26 @@ function socialPlatform(value: string): SocialAccount["platform"] {
   return socialPlatforms.find((platform) => platform.toLowerCase() === value.toLowerCase()) ?? "Other";
 }
 
+function optionalApiBoolean(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  if (value === 1 || value === "1" || value === "true") return true;
+  if (value === 0 || value === "0" || value === "false") return false;
+  return undefined;
+}
+
+export function preservePendingSocialVisibility(refreshed: Business, pending: Business): Business {
+  const pendingVisibility = new Map(pending.socials.map((social) => [social.id, social.showOnCard !== false]));
+  return {
+    ...refreshed,
+    socials: refreshed.socials.map((social) => {
+      const expected = pendingVisibility.get(social.id);
+      return social.showOnCard === undefined && expected !== undefined
+        ? { ...social, showOnCard: expected }
+        : social;
+    }),
+  };
+}
+
 export function mapBusiness(row: BusinessRow): Business {
   const activeLinks = (row.links ?? []).filter((link) => link.is_active);
   const primary = new Map<PrimaryLinkType, BusinessLinkRow>();
@@ -178,7 +198,7 @@ export function mapBusiness(row: BusinessRow): Business {
       accountName: row.name,
       username: item.username ?? "",
       profileUrl: item.url,
-      showOnCard: item.show_on_card !== false,
+      showOnCard: optionalApiBoolean(item.show_on_card),
     })),
   };
 }
