@@ -15,7 +15,7 @@ export type BusinessLinkRow = {
 
 export type SocialRow = {
   id: string; business_id: string; platform: string; username: string | null; url: string;
-  display_order: number; is_active: boolean;
+  show_on_card?: boolean; display_order: number; is_active: boolean;
 };
 
 export type WebsiteCheckRow = {
@@ -85,6 +85,7 @@ export function businessSocialRecord(social: SocialAccount, displayOrder: number
     platform: social.platform.toLowerCase(),
     username: social.username || null,
     url: social.profileUrl.trim(),
+    show_on_card: social.showOnCard !== false,
     display_order: displayOrder,
     is_active: true,
   };
@@ -177,7 +178,7 @@ export function mapBusiness(row: BusinessRow): Business {
       accountName: row.name,
       username: item.username ?? "",
       profileUrl: item.url,
-      showOnCard: true,
+      showOnCard: item.show_on_card !== false,
     })),
   };
 }

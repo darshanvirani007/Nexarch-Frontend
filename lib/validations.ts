@@ -65,6 +65,7 @@ export const socialAccountSchema = z.object({
   accountName: z.string().trim().min(2, "Account name is required"),
   username: z.string().trim().default(""),
   profileUrl: optionalUrl.refine((value) => Boolean(value), "Profile URL is required"),
+  showOnCard: z.boolean().default(true),
 });
 
 export const personalLinkSchema = z.object({

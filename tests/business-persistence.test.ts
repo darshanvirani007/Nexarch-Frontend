@@ -54,7 +54,7 @@ describe("new business child persistence", () => {
       analyticsUrl: "https://analytics.example/",
       cardShortcutVisibility: { website: false },
       links: [{ id: "temporary-link", label: "Documentation", url: "https://docs.example/", category: "Documents", showOnCard: true }],
-      socials: [{ id: "temporary-social", platform: "LinkedIn", accountName: "Nexarch", username: "nexarch", profileUrl: "https://linkedin.com/company/nexarch" }],
+      socials: [{ id: "temporary-social", platform: "LinkedIn", accountName: "Nexarch", username: "nexarch", profileUrl: "https://linkedin.com/company/nexarch", showOnCard: false }],
       notes: "Private business note",
     }), client);
 
@@ -62,7 +62,7 @@ describe("new business child persistence", () => {
     expect(client.createBusinessLink).toHaveBeenCalledTimes(7);
     expect(client.createBusinessLink).toHaveBeenCalledWith("business-1", expect.objectContaining({ link_type: "website", show_on_card: false }));
     expect(client.createBusinessLink).toHaveBeenCalledWith("business-1", expect.objectContaining({ link_type: "custom:documents", name: "Documentation" }));
-    expect(client.createSocial).toHaveBeenCalledWith("business-1", expect.objectContaining({ platform: "linkedin", username: "nexarch" }));
+    expect(client.createSocial).toHaveBeenCalledWith("business-1", expect.objectContaining({ platform: "linkedin", username: "nexarch", show_on_card: false }));
     expect(client.saveBusinessNote).toHaveBeenCalledWith("business-1", "Private business note");
   });
 

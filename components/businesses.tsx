@@ -20,7 +20,7 @@ import { businessSchema, socialAccountSchema } from "@/lib/validations";
 import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
 import type { WebsiteCheckRow } from "@/lib/api/mappers";
 import type { Business, BusinessLink, WebsiteStatus } from "@/lib/types";
-import { initials } from "@/lib/utils";
+import { cn, initials } from "@/lib/utils";
 import { useAppStore } from "./app-store";
 import { Badge, Button, Field, inputClass, Modal, SelectControl } from "./ui";
 
@@ -56,6 +56,38 @@ const socialIcons: Record<Business["socials"][number]["platform"], React.Element
 export function SocialPlatformIcon({ platform, className = "size-4" }: { platform: Business["socials"][number]["platform"]; className?: string }) {
   const Icon = socialIcons[platform];
   return <Icon className={className} aria-hidden="true" />;
+}
+
+export function CardVisibilitySwitch({
+  checked,
+  onCheckedChange,
+  accessibleLabel = "Show on business card",
+  className,
+  promptClassName,
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  accessibleLabel?: string;
+  className?: string;
+  promptClassName?: string;
+}) {
+  return (
+    <label className={cn("flex cursor-pointer items-center justify-between gap-3", className)} title="Show this shortcut on the business card">
+      <span className={cn("muted text-xs", promptClassName)}>Show on card</span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onCheckedChange(event.target.checked)}
+        className="peer sr-only"
+        aria-label={accessibleLabel}
+      />
+      <span
+        aria-hidden="true"
+        className="relative h-5 w-9 shrink-0 rounded-full bg-foreground/12 transition after:absolute after:left-0.5 after:top-0.5 after:size-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-foreground peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-foreground peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background"
+      />
+      <span className="text-xs font-medium">{checked ? "Shown" : "Hidden"}</span>
+    </label>
+  );
 }
 
 export function iconForBusinessLink(link: BusinessLink) {
@@ -419,20 +451,13 @@ export function BusinessForm({ open, onOpenChange, business }: { open: boolean; 
                     required
                   />
                 </div>
-                <label className="flex cursor-pointer items-center justify-between gap-3 sm:justify-start" title="Show this shortcut on the business card">
-                  <span className="muted text-xs lg:hidden">Show on card</span>
-                  <input
-                    type="checkbox"
-                    checked={row.showOnCard}
-                    onChange={(event) => setLinkRows((rows) => rows.map((item) => item.id === row.id ? { ...item, showOnCard: event.target.checked } : item))}
-                    className="peer sr-only"
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="relative h-5 w-9 shrink-0 rounded-full bg-foreground/12 transition after:absolute after:left-0.5 after:top-0.5 after:size-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-foreground peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-foreground peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background"
-                  />
-                  <span className="text-xs font-medium">{row.showOnCard ? "Shown" : "Hidden"}</span>
-                </label>
+                <CardVisibilitySwitch
+                  checked={row.showOnCard}
+                  onCheckedChange={(checked) => setLinkRows((rows) => rows.map((item) => item.id === row.id ? { ...item, showOnCard: checked } : item))}
+                  accessibleLabel={`Show ${optionalBusinessLinks.find((option) => option.value === row.kind)?.label} on business card`}
+                  className="sm:justify-start"
+                  promptClassName="lg:hidden"
+                />
                 <button
                   type="button"
                   onClick={() => setLinkRows((rows) => rows.filter((item) => item.id !== row.id))}
@@ -552,8 +577,40 @@ export function LinkForm({ business, open, onOpenChange }: { business: Business;
 
 export function SocialForm({ businessId, open, onOpenChange }: { businessId: string; open: boolean; onOpenChange: (value: boolean) => void }) {
   const { addSocial } = useAppStore();
-  const { control, register, handleSubmit, formState: { errors }, reset } = useForm<z.input<typeof socialAccountSchema>>({ resolver: zodResolver(socialAccountSchema), defaultValues: { platform: "LinkedIn", accountName: "", username: "", profileUrl: "" } });
-  return <Modal open={open} onOpenChange={onOpenChange} title="Add social account" description="The account opens directly in a new tab. No passwords or analytics are stored."><form className="grid gap-4" onSubmit={handleSubmit((values) => { addSocial(businessId, socialAccountSchema.parse(values)); toast.success("Social account added"); reset(); onOpenChange(false); })}><Field label="Platform" error={errors.platform?.message}><Controller name="platform" control={control} render={({ field }) => <SelectControl ariaLabel="Platform" value={field.value} onValueChange={field.onChange} options={["LinkedIn","Instagram","X","YouTube","Facebook","TikTok","GitHub","Threads","Reddit","Blog","Other"]} /> } /></Field><Field label="Account name" error={errors.accountName?.message}><input {...register("accountName")} className={inputClass} placeholder="Northstar Studio" /></Field><Field label="Username" error={errors.username?.message}><input {...register("username")} className={inputClass} placeholder="@northstar" /></Field><Field label="Profile URL" error={errors.profileUrl?.message}><input {...register("profileUrl")} className={inputClass} placeholder="https://linkedin.com/company/…" /></Field><Button type="submit" className="mt-2"><Plus className="size-4" /> Add social account</Button></form></Modal>;
+  const { control, register, handleSubmit, formState: { errors }, reset } = useForm<z.input<typeof socialAccountSchema>>({
+    resolver: zodResolver(socialAccountSchema),
+    defaultValues: { platform: "LinkedIn", accountName: "", username: "", profileUrl: "", showOnCard: true },
+  });
+  return (
+    <Modal open={open} onOpenChange={onOpenChange} title="Add social account" description="The account opens directly in a new tab. No passwords or analytics are stored.">
+      <form className="grid gap-4" onSubmit={handleSubmit((values) => {
+        addSocial(businessId, socialAccountSchema.parse(values));
+        toast.success("Social account added");
+        reset();
+        onOpenChange(false);
+      })}>
+        <Field label="Platform" error={errors.platform?.message}>
+          <Controller name="platform" control={control} render={({ field }) => <SelectControl ariaLabel="Platform" value={field.value} onValueChange={field.onChange} options={["LinkedIn", "Instagram", "X", "YouTube", "Facebook", "TikTok", "GitHub", "Threads", "Reddit", "Blog", "Other"]} /> } />
+        </Field>
+        <Field label="Account name" error={errors.accountName?.message}><input {...register("accountName")} className={inputClass} placeholder="Northstar Studio" /></Field>
+        <Field label="Username" error={errors.username?.message}><input {...register("username")} className={inputClass} placeholder="@northstar" /></Field>
+        <Field label="Profile URL" error={errors.profileUrl?.message}><input {...register("profileUrl")} className={inputClass} placeholder="https://linkedin.com/company/…" /></Field>
+        <Controller
+          name="showOnCard"
+          control={control}
+          render={({ field }) => (
+            <CardVisibilitySwitch
+              checked={field.value !== false}
+              onCheckedChange={field.onChange}
+              accessibleLabel="Show this social account on the business card"
+              className="rounded-xl border bg-foreground/[.02] px-3 py-3"
+            />
+          )}
+        />
+        <Button type="submit" className="mt-2"><Plus className="size-4" /> Add social account</Button>
+      </form>
+    </Modal>
+  );
 }
 
 export function EmptyBusinesses({ onAdd }: { onAdd: () => void }) {

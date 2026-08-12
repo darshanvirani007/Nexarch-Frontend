@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore } from "@/components/app-store";
-import { BusinessForm, ExternalShortcut, LinkForm, SocialForm, SocialPlatformIcon, WebsiteLinkIcon, WebsiteStatusBadge, checkBusinessWebsite, iconForBusinessLink } from "@/components/businesses";
+import { BusinessForm, CardVisibilitySwitch, ExternalShortcut, LinkForm, SocialForm, SocialPlatformIcon, WebsiteLinkIcon, WebsiteStatusBadge, checkBusinessWebsite, iconForBusinessLink } from "@/components/businesses";
 import { BusinessKeyVault } from "@/components/key-vault";
 import { Button, Modal, SectionHeading } from "@/components/ui";
 import { initials } from "@/lib/utils";
@@ -61,7 +61,31 @@ export default function BusinessDetailPage() {
       </section>
       <div className="grid gap-8 xl:grid-cols-[1.1fr_.9fr]">
         <div className="space-y-8">
-          <section><SectionHeading title="Social accounts" description="Configured profiles only—no analytics." action={<Button variant="secondary" onClick={() => setSocialOpen(true)}><Plus className="size-4" /> Add account</Button>} /><div className="panel divide-y overflow-hidden rounded-2xl">{business.socials.length ? business.socials.map((social) => <a key={social.id} href={social.profileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 transition hover:bg-foreground/5"><span className="grid size-9 place-items-center rounded-xl border bg-foreground/[.025]"><SocialPlatformIcon platform={social.platform} /></span><span><span className="block text-sm font-medium">{social.platform}</span><span className="muted text-xs">{social.username || social.accountName}</span></span><ExternalLink className="muted ml-auto size-4" /></a>) : <p className="muted p-6 text-sm">No social accounts configured.</p>}</div></section>
+          <section>
+            <SectionHeading title="Social accounts" description="Configured profiles only—no analytics." action={<Button variant="secondary" onClick={() => setSocialOpen(true)}><Plus className="size-4" /> Add account</Button>} />
+            <div className="panel divide-y overflow-hidden rounded-2xl">
+              {business.socials.length ? business.socials.map((social) => (
+                <div key={social.id} className="flex items-stretch">
+                  <a href={social.profileUrl} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-1 items-center gap-3 p-4 transition hover:bg-foreground/5">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-xl border bg-foreground/[.025]"><SocialPlatformIcon platform={social.platform} /></span>
+                    <span className="min-w-0"><span className="block text-sm font-medium">{social.platform}</span><span className="muted block truncate text-xs">{social.username || social.accountName}</span></span>
+                    <ExternalLink className="muted ml-auto size-4 shrink-0" />
+                  </a>
+                  <CardVisibilitySwitch
+                    checked={social.showOnCard !== false}
+                    onCheckedChange={(checked) => {
+                      updateBusiness(business.id, {
+                        socials: business.socials.map((item) => item.id === social.id ? { ...item, showOnCard: checked } : item),
+                      });
+                    }}
+                    accessibleLabel={`Show ${social.platform} on business card`}
+                    className="shrink-0 border-l px-3 sm:px-4"
+                    promptClassName="sr-only"
+                  />
+                </div>
+              )) : <p className="muted p-6 text-sm">No social accounts configured.</p>}
+            </div>
+          </section>
           <BusinessKeyVault businessId={business.id} />
         </div>
         <div className="space-y-8">

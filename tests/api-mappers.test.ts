@@ -18,7 +18,7 @@ describe("Laravel API mappings", () => {
         { id: "repo-1", business_id: "business-1", link_type: "custom:development", name: "GitHub repository", url: "https://github.com/example", show_on_card: false, display_order: 1, is_active: true },
       ],
       social_links: [
-        { id: "social-1", business_id: "business-1", platform: "LinkedIn", username: "nexarch", url: "https://linkedin.com/company/nexarch", display_order: 0, is_active: true },
+        { id: "social-1", business_id: "business-1", platform: "LinkedIn", username: "nexarch", url: "https://linkedin.com/company/nexarch", show_on_card: false, display_order: 0, is_active: true },
       ],
       note: { id: "note-1", content: "Private note" },
       website_checks: [
@@ -30,7 +30,7 @@ describe("Laravel API mappings", () => {
     expect(business.websiteUrl).toBe("https://example.com");
     expect(business.websiteStatus).toBe("online");
     expect(business.links[0]).toMatchObject({ id: "repo-1", category: "Development", showOnCard: false });
-    expect(business.socials[0].platform).toBe("LinkedIn");
+    expect(business.socials[0]).toMatchObject({ platform: "LinkedIn", showOnCard: false });
     expect(business.notes).toBe("Private note");
     expect(business.primaryLinkIds?.website).toBe("website-1");
   });
@@ -55,7 +55,7 @@ describe("Laravel API mappings", () => {
     expect(jobApplicationRecord(job, 0).payload.status).toBe("accepted");
     expect(taskRecord(daily, 0)).toMatchObject({ resource: "daily-tasks", payload: { task_date: "2026-08-09", is_completed: true } });
     expect(taskRecord(commerce, 0)).toBeNull();
-    expect(businessSocialRecord({ id: "social", platform: "YouTube", accountName: "Nexarch", username: "nexarch", profileUrl: "https://youtube.com/@nexarch" }, 0)).toMatchObject({ platform: "youtube", display_order: 0 });
+    expect(businessSocialRecord({ id: "social", platform: "YouTube", accountName: "Nexarch", username: "nexarch", profileUrl: "https://youtube.com/@nexarch", showOnCard: false }, 0)).toMatchObject({ platform: "youtube", show_on_card: false, display_order: 0 });
     expect(goalRecord(goal, 0).payload).toMatchObject({ category: "financial", measure: "euro", unit: "Euro" });
   });
 });
