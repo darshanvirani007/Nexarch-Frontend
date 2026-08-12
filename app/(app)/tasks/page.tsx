@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
-import { BriefcaseBusiness, CalendarCheck2, Check, ExternalLink, ListTodo, Plus, Trash2 } from "lucide-react";
+import { BriefcaseBusiness, CalendarCheck2, Check, ExternalLink, ListTodo, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/app-shell";
 import { useAppStore } from "@/components/app-store";
 import { Button, Field, inputClass, Modal, SelectControl } from "@/components/ui";
-import type { JobApplication } from "@/lib/types";
+import type { JobApplication, Task } from "@/lib/types";
 
 type TaskTab = "Daily tasks" | "Tasks" | "Job applications";
 
@@ -23,6 +23,7 @@ export default function TasksPage() {
   const searchParams = useSearchParams();
   const { tasks, setTasks, jobApplications, setJobApplications } = useAppStore();
   const [open, setOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [title, setTitle] = useState("");
   const [jobUrl, setJobUrl] = useState("");
   const requestedTab = searchParams.get("tab");
@@ -39,6 +40,11 @@ export default function TasksPage() {
   const remove = (id: string) => {
     setTasks((items) => items.filter((item) => item.id !== id));
     toast.success(activeTab === "Daily tasks" ? "Daily task deleted" : "Task deleted");
+  };
+  const openTaskEditor = (task: Task) => {
+    setEditingTask(task);
+    setTitle(task.title);
+    setOpen(true);
   };
   const updateApplicationStatus = (id: string, status: JobApplication["status"]) => {
     setJobApplications((items) => items.map((item) => item.id === id ? { ...item, status } : item));
@@ -57,7 +63,7 @@ export default function TasksPage() {
         eyebrow={format(today, "EEEE, d MMMM")}
         title="Tasks"
         description="Turn important updates and ideas into clear next actions."
-        action={<Button onClick={() => setOpen(true)}><Plus className="size-4" /> {actionLabel}</Button>}
+        action={<Button onClick={() => { setEditingTask(null); setTitle(""); setJobUrl(""); setOpen(true); }}><Plus className="size-4" /> {actionLabel}</Button>}
       />
 
       <div className="scrollbar-none mb-8 flex gap-1 overflow-x-auto rounded-2xl border bg-foreground/[.025] p-1.5" role="tablist" aria-label="Task types">
@@ -98,6 +104,9 @@ export default function TasksPage() {
               {task.status === "Completed" && <Check className="task-check-icon size-3.5" />}
             </button>
             <p className={`task-title min-w-0 flex-1 text-sm font-medium ${task.status === "Completed" ? "muted line-through" : ""}`}>{task.title}</p>
+            <button onClick={() => openTaskEditor(task)} className="muted rounded-lg p-2 transition hover:bg-foreground/5 hover:text-foreground" aria-label={`Edit ${task.title}`}>
+              <Pencil className="size-4" />
+            </button>
             <button onClick={() => remove(task.id)} className="muted rounded-lg p-2 transition hover:bg-red-500/10 hover:text-red-500" aria-label={`Delete ${task.title}`}>
               <Trash2 className="size-4" />
             </button>
@@ -117,10 +126,18 @@ export default function TasksPage() {
           </div>
         </article>) : <div className="p-8 text-center"><p className="text-sm font-medium">No job applications yet</p><p className="muted mt-1 text-xs">Add a role and its job listing link to start tracking it.</p></div>}
       </div>}
-      <Modal open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) { setTitle(""); setJobUrl(""); } }} title={activeTab === "Daily tasks" ? "Add today’s task" : activeTab === "Tasks" ? "Add task" : "Add job application"} description={activeTab === "Daily tasks" ? "Keep it short and focused." : activeTab === "Tasks" ? "Add something you want to keep track of." : "Save the role and listing link. New applications start as pending."}>
+      <Modal open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) { setEditingTask(null); setTitle(""); setJobUrl(""); } }} title={editingTask ? "Edit task" : activeTab === "Daily tasks" ? "Add today’s task" : activeTab === "Tasks" ? "Add task" : "Add job application"} description={editingTask ? "Update the task name without changing its completion state." : activeTab === "Daily tasks" ? "Keep it short and focused." : activeTab === "Tasks" ? "Add something you want to keep track of." : "Save the role and listing link. New applications start as pending."}>
         <form className="grid gap-4" onSubmit={(event) => {
           event.preventDefault();
           if (!title.trim()) return;
+          if (editingTask) {
+            setTasks((items) => items.map((item) => item.id === editingTask.id ? { ...item, title: title.trim() } : item));
+            toast.success("Task updated");
+            setEditingTask(null);
+            setTitle("");
+            setOpen(false);
+            return;
+          }
           if (activeTab === "Job applications") {
             if (!jobUrl.trim()) return;
             setJobApplications((items) => [{ id: crypto.randomUUID(), jobName: title.trim(), jobUrl: jobUrl.trim(), status: "Pending", createdAt: new Date().toISOString() }, ...items]);
@@ -148,7 +165,7 @@ export default function TasksPage() {
             <input value={title} onChange={(event) => setTitle(event.target.value)} className={inputClass} placeholder={activeTab === "Daily tasks" ? "What needs doing today?" : activeTab === "Tasks" ? "What needs doing?" : "Product Designer at Nexarch"} required autoFocus />
           </Field>
           {activeTab === "Job applications" && <Field label="Job link"><input type="url" value={jobUrl} onChange={(event) => setJobUrl(event.target.value)} className={inputClass} placeholder="https://company.com/jobs/role" required /></Field>}
-          <Button type="submit">{actionLabel}</Button>
+          <Button type="submit">{editingTask ? "Save changes" : actionLabel}</Button>
         </form>
       </Modal>
     </>

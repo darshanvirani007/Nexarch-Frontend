@@ -53,7 +53,8 @@ describe("Laravel API mappings", () => {
 
     expect(learningRecord(learning, 0).payload.status).toBe("completed");
     expect(jobApplicationRecord(job, 0).payload.status).toBe("accepted");
-    expect(taskRecord(daily, 0)).toMatchObject({ resource: "daily-tasks", payload: { task_date: "2026-08-09", is_completed: true } });
+    expect(taskRecord(daily, 0)).toMatchObject({ resource: "daily-tasks", payload: { task: "Review API", task_date: "2026-08-09", is_completed: true } });
+    expect(taskRecord({ ...daily, id: "general-task", title: "Updated task", area: "General" }, 1)).toMatchObject({ resource: "tasks", payload: { task: "Updated task", is_completed: true } });
     expect(taskRecord(commerce, 0)).toBeNull();
     expect(businessSocialRecord({ id: "social", platform: "YouTube", accountName: "Nexarch", username: "nexarch", profileUrl: "https://youtube.com/@nexarch", showOnCard: false }, 0)).toMatchObject({ platform: "youtube", show_on_card: false, display_order: 0 });
     expect(goalRecord(goal, 0).payload).toMatchObject({ category: "financial", measure: "euro", unit: "Euro" });
