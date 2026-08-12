@@ -39,6 +39,8 @@ describe("business mutations", () => {
   it("validates links and social accounts", () => {
     expect(businessLinkSchema.safeParse({ label: "Repository", url: "https://github.com/demo", category: "Development" }).success).toBe(true);
     expect(socialAccountSchema.safeParse({ platform: "LinkedIn", accountName: "Northstar", username: "northstar", profileUrl: "https://linkedin.com/company/demo" }).success).toBe(true);
+    expect(socialAccountSchema.parse({ platform: "YouTube", accountName: "Northstar", username: "northstar", profileUrl: "https://youtube.com/@northstar", showOnCard: false })).toMatchObject({ platform: "YouTube", showOnCard: false });
+    expect(socialAccountSchema.safeParse({ platform: "LinkedIn", accountName: "Northstar", username: "northstar", profileUrl: "javascript:alert(1)" }).success).toBe(false);
   });
 });
 

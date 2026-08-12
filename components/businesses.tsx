@@ -575,24 +575,61 @@ export function LinkForm({ business, open, onOpenChange }: { business: Business;
   );
 }
 
-export function SocialForm({ businessId, open, onOpenChange }: { businessId: string; open: boolean; onOpenChange: (value: boolean) => void }) {
-  const { addSocial } = useAppStore();
+export function SocialForm({ businessId, open, onOpenChange, social }: {
+  businessId: string;
+  open: boolean;
+  onOpenChange: (value: boolean) => void;
+  social?: Business["socials"][number];
+}) {
+  const { addSocial, businesses, updateBusiness } = useAppStore();
   const { control, register, handleSubmit, formState: { errors }, reset } = useForm<z.input<typeof socialAccountSchema>>({
     resolver: zodResolver(socialAccountSchema),
     defaultValues: { platform: "LinkedIn", accountName: "", username: "", profileUrl: "", showOnCard: true },
   });
+  useEffect(() => {
+    if (!open) return;
+    reset(social ? {
+      platform: social.platform,
+      accountName: social.accountName,
+      username: social.username,
+      profileUrl: social.profileUrl,
+      showOnCard: social.showOnCard !== false,
+    } : {
+      platform: "LinkedIn",
+      accountName: "",
+      username: "",
+      profileUrl: "",
+      showOnCard: true,
+    });
+  }, [open, reset, social]);
+
+  const submit = (values: z.input<typeof socialAccountSchema>) => {
+    const parsed = socialAccountSchema.parse(values);
+    if (social) {
+      const business = businesses.find((item) => item.id === businessId);
+      if (!business) {
+        toast.error("Business could not be found");
+        return;
+      }
+      updateBusiness(businessId, {
+        socials: business.socials.map((item) => item.id === social.id ? { ...item, ...parsed } : item),
+      });
+      toast.success("Social account updated");
+    } else {
+      addSocial(businessId, parsed);
+      toast.success("Social account added");
+    }
+    reset();
+    onOpenChange(false);
+  };
+
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Add social account" description="The account opens directly in a new tab. No passwords or analytics are stored.">
-      <form className="grid gap-4" onSubmit={handleSubmit((values) => {
-        addSocial(businessId, socialAccountSchema.parse(values));
-        toast.success("Social account added");
-        reset();
-        onOpenChange(false);
-      })}>
+    <Modal open={open} onOpenChange={onOpenChange} title={social ? "Edit social account" : "Add social account"} description="The account opens directly in a new tab. No passwords or analytics are stored.">
+      <form className="grid gap-4" onSubmit={handleSubmit(submit)}>
         <Field label="Platform" error={errors.platform?.message}>
           <Controller name="platform" control={control} render={({ field }) => <SelectControl ariaLabel="Platform" value={field.value} onValueChange={field.onChange} options={["LinkedIn", "Instagram", "X", "YouTube", "Facebook", "TikTok", "GitHub", "Threads", "Reddit", "Blog", "Other"]} /> } />
         </Field>
-        <Field label="Account name" error={errors.accountName?.message}><input {...register("accountName")} className={inputClass} placeholder="Northstar Studio" /></Field>
+        {!social && <Field label="Account name" error={errors.accountName?.message}><input {...register("accountName")} className={inputClass} placeholder="Northstar Studio" /></Field>}
         <Field label="Username" error={errors.username?.message}><input {...register("username")} className={inputClass} placeholder="@northstar" /></Field>
         <Field label="Profile URL" error={errors.profileUrl?.message}><input {...register("profileUrl")} className={inputClass} placeholder="https://linkedin.com/company/…" /></Field>
         <Controller
@@ -607,7 +644,10 @@ export function SocialForm({ businessId, open, onOpenChange }: { businessId: str
             />
           )}
         />
-        <Button type="submit" className="mt-2"><Plus className="size-4" /> Add social account</Button>
+        <div className="mt-2 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button type="submit">{social ? <Check className="size-4" /> : <Plus className="size-4" />}{social ? "Save changes" : "Add social account"}</Button>
+        </div>
       </form>
     </Modal>
   );

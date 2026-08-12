@@ -11,7 +11,8 @@ import { toast } from "sonner";
 import { useAppStore } from "@/components/app-store";
 import { BusinessForm, CardVisibilitySwitch, ExternalShortcut, LinkForm, SocialForm, SocialPlatformIcon, WebsiteLinkIcon, WebsiteStatusBadge, checkBusinessWebsite, iconForBusinessLink } from "@/components/businesses";
 import { BusinessKeyVault } from "@/components/key-vault";
-import { Button, Modal, SectionHeading } from "@/components/ui";
+import { Button, IconButton, Modal, SectionHeading } from "@/components/ui";
+import type { SocialAccount } from "@/lib/types";
 import { initials } from "@/lib/utils";
 
 export default function BusinessDetailPage() {
@@ -22,6 +23,8 @@ export default function BusinessDetailPage() {
   const [edit, setEdit] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [socialOpen, setSocialOpen] = useState(false);
+  const [editingSocial, setEditingSocial] = useState<SocialAccount | null>(null);
+  const [deletingSocial, setDeletingSocial] = useState<SocialAccount | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   if (!business) return <div className="panel rounded-3xl p-10 text-center"><h1 className="text-xl font-semibold">Business not found</h1><Button className="mt-5" onClick={() => router.push("/businesses")}>Return to businesses</Button></div>;
   return (
@@ -71,17 +74,21 @@ export default function BusinessDetailPage() {
                     <span className="min-w-0"><span className="block text-sm font-medium">{social.platform}</span><span className="muted block truncate text-xs">{social.username || social.accountName}</span></span>
                     <ExternalLink className="muted ml-auto size-4 shrink-0" />
                   </a>
-                  <CardVisibilitySwitch
-                    checked={social.showOnCard !== false}
-                    onCheckedChange={(checked) => {
-                      updateBusiness(business.id, {
-                        socials: business.socials.map((item) => item.id === social.id ? { ...item, showOnCard: checked } : item),
-                      });
-                    }}
-                    accessibleLabel={`Show ${social.platform} on business card`}
-                    className="shrink-0 border-l px-3 sm:px-4"
-                    promptClassName="sr-only"
-                  />
+                  <div className="flex shrink-0 items-center gap-1 border-l px-2 sm:px-3">
+                    <CardVisibilitySwitch
+                      checked={social.showOnCard !== false}
+                      onCheckedChange={(checked) => {
+                        updateBusiness(business.id, {
+                          socials: business.socials.map((item) => item.id === social.id ? { ...item, showOnCard: checked } : item),
+                        });
+                      }}
+                      accessibleLabel={`Show ${social.platform} on business card`}
+                      className="px-1"
+                      promptClassName="sr-only"
+                    />
+                    <IconButton label={`Edit ${social.platform}`} className="size-9 border-0 shadow-none" onClick={() => setEditingSocial(social)}><Pencil className="size-4" /></IconButton>
+                    <IconButton label={`Delete ${social.platform}`} className="size-9 border-0 text-red-500 shadow-none hover:bg-red-500/10" onClick={() => setDeletingSocial(social)}><Trash2 className="size-4" /></IconButton>
+                  </div>
                 </div>
               )) : <p className="muted p-6 text-sm">No social accounts configured.</p>}
             </div>
@@ -116,6 +123,18 @@ export default function BusinessDetailPage() {
         </div>
       </div>
       <BusinessForm open={edit} onOpenChange={setEdit} business={business} /><LinkForm business={business} open={linkOpen} onOpenChange={setLinkOpen} /><SocialForm businessId={business.id} open={socialOpen} onOpenChange={setSocialOpen} />
+      <SocialForm businessId={business.id} social={editingSocial ?? undefined} open={Boolean(editingSocial)} onOpenChange={(open) => { if (!open) setEditingSocial(null); }} />
+      <Modal open={Boolean(deletingSocial)} onOpenChange={(open) => { if (!open) setDeletingSocial(null); }} title="Delete this social account?" description={deletingSocial ? `This removes the ${deletingSocial.platform} shortcut from ${business.name}.` : undefined}>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setDeletingSocial(null)}>Cancel</Button>
+          <Button variant="danger" onClick={() => {
+            if (!deletingSocial) return;
+            updateBusiness(business.id, { socials: business.socials.filter((item) => item.id !== deletingSocial.id) });
+            setDeletingSocial(null);
+            toast.success("Social account deleted");
+          }}><Trash2 className="size-4" /> Delete account</Button>
+        </div>
+      </Modal>
       <Modal open={confirmDelete} onOpenChange={setConfirmDelete} title="Delete this business?" description="This removes the business and its related links from the current workspace."><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setConfirmDelete(false)}>Cancel</Button><Button variant="danger" onClick={() => { removeBusiness(business.id); toast.success("Business deleted"); router.push("/businesses"); }}>Delete permanently</Button></div></Modal>
     </>
   );
