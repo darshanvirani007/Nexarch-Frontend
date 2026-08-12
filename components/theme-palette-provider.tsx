@@ -1,20 +1,29 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import {
-  DENSITY_STORAGE_KEY,
-  resolveDensity,
-  resolveThemePalette,
-  THEME_PALETTE_STORAGE_KEY,
   type Density,
   type ThemePalette,
 } from "@/lib/theme-palettes";
+import {
+  DEFAULT_APPEARANCE_PREFERENCES,
+  isAppearanceTheme,
+  readAppearancePreferences,
+  writeAppearancePreferences,
+  type AppearancePreferences,
+  type AppearanceTheme,
+} from "@/lib/appearance-preferences";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type ThemePaletteContextValue = {
   palette: ThemePalette;
   setPalette: (palette: ThemePalette) => void;
   density: Density;
   setDensity: (density: Density) => void;
+  theme: AppearanceTheme;
+  resolvedTheme?: string;
+  setTheme: (theme: AppearanceTheme) => void;
 };
 
 const ThemePaletteContext = createContext<ThemePaletteContextValue | null>(null);
@@ -28,43 +37,83 @@ function applyDensity(density: Density) {
 }
 
 export function ThemePaletteProvider({ children }: { children: React.ReactNode }) {
-  const [preferences, setPreferences] = useState<{ palette: ThemePalette; density: Density }>({
-    palette: "graphite",
-    density: "comfortable",
-  });
+  const { resolvedTheme, setTheme: setNextTheme } = useTheme();
+  const userIdRef = useRef<string | null>(null);
+  const [preferences, setPreferences] = useState<AppearancePreferences>(DEFAULT_APPEARANCE_PREFERENCES);
+
+  const persist = useCallback((nextPreferences: AppearancePreferences) => {
+    const userId = userIdRef.current;
+    if (!userId) return;
+    try {
+      writeAppearancePreferences(window.localStorage, userId, nextPreferences);
+    } catch {
+      // Appearance still applies for this session when browser storage is unavailable.
+    }
+  }, []);
+
+  const applyPreferences = useCallback((nextPreferences: AppearancePreferences, userId: string | null) => {
+    userIdRef.current = userId;
+    applyPalette(nextPreferences.palette);
+    applyDensity(nextPreferences.density);
+    setNextTheme(nextPreferences.theme);
+    setPreferences(nextPreferences);
+  }, [setNextTheme]);
 
   useEffect(() => {
-    const initialPalette = resolveThemePalette(document.documentElement.dataset.palette);
-    const initialDensity = resolveDensity(document.documentElement.dataset.density);
-    applyPalette(initialPalette);
-    applyDensity(initialDensity);
-    // The server cannot read this device preference; synchronise it after hydration.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPreferences({ palette: initialPalette, density: initialDensity });
-  }, []);
+    if (!isSupabaseConfigured()) return;
+
+    let active = true;
+    const supabase = createClient();
+    const applyForUser = (userId: string | null | undefined) => {
+      if (!active) return;
+      const nextPreferences = userId
+        ? readAppearancePreferences(window.localStorage, userId)
+        : DEFAULT_APPEARANCE_PREFERENCES;
+      applyPreferences(nextPreferences, userId ?? null);
+      if (userId) persist(nextPreferences);
+    };
+
+    void supabase.auth.getSession().then(({ data }) => applyForUser(data.session?.user.id));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      applyForUser(session?.user.id);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [applyPreferences, persist]);
 
   const setPalette = useCallback((nextPalette: ThemePalette) => {
     applyPalette(nextPalette);
-    setPreferences((current) => ({ ...current, palette: nextPalette }));
-    try {
-      window.localStorage.setItem(THEME_PALETTE_STORAGE_KEY, nextPalette);
-    } catch {
-      // The palette still applies for this session when storage is unavailable.
-    }
-  }, []);
+    setPreferences((current) => {
+      const next = { ...current, palette: nextPalette };
+      persist(next);
+      return next;
+    });
+  }, [persist]);
 
   const setDensity = useCallback((nextDensity: Density) => {
     applyDensity(nextDensity);
-    setPreferences((current) => ({ ...current, density: nextDensity }));
-    try {
-      window.localStorage.setItem(DENSITY_STORAGE_KEY, nextDensity);
-    } catch {
-      // The density still applies for this session when storage is unavailable.
-    }
-  }, []);
+    setPreferences((current) => {
+      const next = { ...current, density: nextDensity };
+      persist(next);
+      return next;
+    });
+  }, [persist]);
+
+  const setTheme = useCallback((nextTheme: AppearanceTheme) => {
+    if (!isAppearanceTheme(nextTheme)) return;
+    setNextTheme(nextTheme);
+    setPreferences((current) => {
+      const next = { ...current, theme: nextTheme };
+      persist(next);
+      return next;
+    });
+  }, [persist, setNextTheme]);
 
   return (
-    <ThemePaletteContext.Provider value={{ ...preferences, setPalette, setDensity }}>
+    <ThemePaletteContext.Provider value={{ ...preferences, resolvedTheme, setPalette, setDensity, setTheme }}>
       {children}
     </ThemePaletteContext.Provider>
   );

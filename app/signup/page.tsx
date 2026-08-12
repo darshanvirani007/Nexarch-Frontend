@@ -15,6 +15,7 @@ import { buildAuthCallbackUrl } from "@/lib/auth-redirect";
 import { resendSignupVerification } from "@/lib/auth-verification";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { signUpSchema } from "@/lib/validations";
+import { initializeUserAppearance } from "@/lib/appearance-preferences";
 
 type SignUpValues = z.input<typeof signUpSchema>;
 
@@ -62,6 +63,7 @@ export default function SignUpPage() {
         toast.error("We could not create your account. Please check your details and try again.");
         return;
       }
+      if (data.user) initializeUserAppearance(window.localStorage, data.user.id);
       if (data.session) {
         toast.success("Account created");
         router.push("/onboarding");

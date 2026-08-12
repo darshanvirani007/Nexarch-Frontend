@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { useTheme } from "next-themes";
 import {
   BookOpen, Building2, CheckSquare2, ChevronRight, Command,
   Goal, LayoutDashboard, Link2, Menu, Moon, Search, Settings, ShoppingBag,
@@ -17,6 +16,7 @@ import { NexarchLoader } from "./nexarch-loader";
 import { Button, IconButton, Modal } from "./ui";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { profileFirstName } from "@/lib/profile-name";
+import { useThemePalette } from "@/components/theme-palette-provider";
 
 const navigation = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -86,7 +86,7 @@ function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (val
 }
 
 function Header({ openMobile, openCommand }: { openMobile: () => void; openCommand: () => void }) {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useThemePalette();
   const [mounted, setMounted] = useState(false);
   const [profileName, setProfileName] = useState("there");
   // Theme resolution is browser-only; defer the icon until after hydration.

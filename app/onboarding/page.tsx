@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Building2, CircleUserRound, Goal, LayoutDashboard } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { Button, Field, inputClass, ProgressBar, SelectControl } from "@/components/ui";
+import { useThemePalette } from "@/components/theme-palette-provider";
+import { densityOptions, isDensity } from "@/lib/theme-palettes";
+import { isAppearanceTheme } from "@/lib/appearance-preferences";
 
 const steps = [
   { title: "Build your private workspace", description: "Choose the areas you want Nexarch to help you keep track of.", icon: CircleUserRound },
@@ -15,6 +18,7 @@ const steps = [
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { theme, setTheme, density, setDensity } = useThemePalette();
   const [step, setStep] = useState(0);
   const [businesses, setBusinesses] = useState(["", "", ""]);
   const CurrentIcon = steps[step].icon;
@@ -27,7 +31,7 @@ export default function OnboardingPage() {
         {step === 0 && <div className="grid gap-4 sm:grid-cols-2"><Field label="First name"><input className={inputClass} placeholder="Your first name" autoComplete="given-name" /></Field><Field label="Last name"><input className={inputClass} placeholder="Your surname" autoComplete="family-name" /></Field><Field label="Timezone"><SelectControl options={["Europe/Dublin", "Europe/London", "America/New_York"]} defaultValue="Europe/Dublin" /></Field></div>}
         {step === 1 && <div className="grid gap-4">{businesses.map((value, index) => <Field key={index} label={`Business ${index + 1}${index === 0 ? "" : " (optional)"}`}><input value={value} onChange={(event) => setBusinesses((items) => items.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} className={inputClass} placeholder={["Northstar Studio","Blackbird Systems","Fieldnotes Press"][index]} /></Field>)}<p className="muted text-xs">After setup, each business can have a logo, website, inbox, social accounts, admin panel, hosting, domain, and custom shortcuts.</p></div>}
         {step === 2 && <div className="grid gap-4 sm:grid-cols-2"><Field label="First learning category"><SelectControl options={["Course", "Certification", "Book"]} /></Field><Field label="What do you want to learn?"><input className={inputClass} placeholder="Advanced TypeScript" /></Field></div>}
-        {step === 3 && <div className="grid gap-4 sm:grid-cols-2"><Field label="Theme"><SelectControl options={["Dark", "Light", "System"]} /></Field><Field label="Density"><SelectControl options={["Comfortable", "Compact"]} /></Field><label className="flex items-center gap-3 rounded-xl border p-4 text-sm"><input type="checkbox" defaultChecked /> Show recent activity</label><label className="flex items-center gap-3 rounded-xl border p-4 text-sm"><input type="checkbox" defaultChecked /> Show personal progress</label></div>}
+        {step === 3 && <div className="grid gap-4 sm:grid-cols-2"><Field label="Theme"><SelectControl value={theme} onValueChange={(value) => { if (isAppearanceTheme(value)) setTheme(value); }} options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }, { value: "system", label: "System" }]} /></Field><Field label="Density"><SelectControl value={density} onValueChange={(value) => { if (isDensity(value)) setDensity(value); }} options={densityOptions} /></Field><label className="flex items-center gap-3 rounded-xl border p-4 text-sm"><input type="checkbox" defaultChecked /> Show recent activity</label><label className="flex items-center gap-3 rounded-xl border p-4 text-sm"><input type="checkbox" defaultChecked /> Show personal progress</label></div>}
       </div>
       <div className="mt-8 flex justify-between"><Button variant="ghost" disabled={step === 0} onClick={() => setStep((value) => value - 1)}><ArrowLeft className="size-4" /> Back</Button><Button onClick={() => step === steps.length - 1 ? router.push("/dashboard") : setStep((value) => value + 1)}>{step === steps.length - 1 ? <><Check className="size-4" /> Finish setup</> : <>Continue <ArrowRight className="size-4" /></>}</Button></div>
     </div>

@@ -1,6 +1,3 @@
-export const THEME_PALETTE_STORAGE_KEY = "nexarch-color-palette";
-export const DENSITY_STORAGE_KEY = "nexarch-density";
-
 export const themePalettes = [
   { value: "graphite", label: "Graphite" },
   { value: "slate", label: "Slate" },
@@ -39,15 +36,6 @@ export function resolveDensity(value: unknown): Density {
 
 export const themePaletteInitScript = `
 (function () {
-  var fallback = "graphite";
-  try {
-    var supported = ${JSON.stringify(themePaletteValues)};
-    var stored = window.localStorage.getItem(${JSON.stringify(THEME_PALETTE_STORAGE_KEY)});
-    document.documentElement.dataset.palette = supported.indexOf(stored) >= 0 ? stored : fallback;
-    var density = window.localStorage.getItem(${JSON.stringify(DENSITY_STORAGE_KEY)});
-    document.documentElement.dataset.density = density === "compact" ? "compact" : "comfortable";
-  } catch (_) {
-    document.documentElement.dataset.palette = fallback;
-    document.documentElement.dataset.density = "comfortable";
-  }
+  document.documentElement.dataset.palette = "graphite";
+  document.documentElement.dataset.density = "comfortable";
 })();`;

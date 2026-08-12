@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
@@ -16,6 +15,7 @@ import type { ProfileResponse } from "@/lib/api/mappers";
 import { accountSettingsSchema, changePasswordSchema } from "@/lib/validations";
 import { useThemePalette } from "@/components/theme-palette-provider";
 import { densityOptions, isDensity, isThemePalette, themePalettes } from "@/lib/theme-palettes";
+import { isAppearanceTheme } from "@/lib/appearance-preferences";
 
 type AccountSettingsValues = z.input<typeof accountSettingsSchema>;
 type ChangePasswordValues = z.input<typeof changePasswordSchema>;
@@ -29,8 +29,7 @@ const emptyProfile: AccountSettingsValues = {
 };
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme();
-  const { palette, setPalette, density, setDensity } = useThemePalette();
+  const { theme, setTheme, palette, setPalette, density, setDensity } = useThemePalette();
   const router = useRouter();
   const [profileLoading, setProfileLoading] = useState(isSupabaseConfigured());
   const [profileSaving, setProfileSaving] = useState(false);
@@ -182,7 +181,7 @@ export default function SettingsPage() {
       <section>
         <SectionHeading title="Appearance & density" description="Choose a refined colour palette while keeping the same Nexarch experience." />
         <div className="panel grid gap-4 rounded-[22px] p-6 sm:grid-cols-3">
-          <Field label="Theme"><SelectControl value={theme} onValueChange={setTheme} options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }, { value: "system", label: "System" }]} /></Field>
+          <Field label="Theme"><SelectControl value={theme} onValueChange={(value) => { if (isAppearanceTheme(value)) setTheme(value); }} options={[{ value: "dark", label: "Dark" }, { value: "light", label: "Light" }, { value: "system", label: "System" }]} /></Field>
           <Field label="Colour palette"><SelectControl value={palette} onValueChange={(value) => { if (isThemePalette(value)) setPalette(value); }} options={themePalettes} /></Field>
           <Field label="Density"><SelectControl value={density} onValueChange={(value) => { if (isDensity(value)) setDensity(value); }} options={densityOptions} /></Field>
         </div>

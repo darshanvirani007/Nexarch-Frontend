@@ -7,7 +7,7 @@ import { ThemePaletteProvider } from "@/components/theme-palette-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="nexarch-theme-runtime-v2">
       <ThemePaletteProvider>
         {children}
         <Toaster
