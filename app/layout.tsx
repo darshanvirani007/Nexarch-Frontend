@@ -5,6 +5,11 @@ import { BrowserFavicon } from "@/components/browser-favicon";
 import { Providers } from "@/components/providers";
 import { themePaletteInitScript } from "@/lib/theme-palettes";
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.nexarchapp.com";
+const title = "Nexarch — Your Private Workspace";
+const description =
+  "Keep your businesses, accounts, links, learning, goals and tasks together in one clear private workspace.";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -16,27 +21,40 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(appUrl),
+  applicationName: "Nexarch",
   title: {
-    default: "Nexarch — Your Private Workspace",
+    default: title,
     template: "%s · Nexarch",
   },
-  description:
-    "Nexarch brings your businesses, accounts, links, learning, goals and tasks together in one clear private workspace.",
+  description,
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: [{ url: "/nexarch-mark.svg", type: "image/svg+xml" }],
     shortcut: "/nexarch-mark.svg",
   },
   openGraph: {
-    title: "Nexarch — Your Private Workspace",
-    description: "Nexarch brings your businesses, accounts, links, learning, goals and tasks together in one clear private workspace.",
-    images: [{ url: "/og-v2.png", width: 1731, height: 909, alt: "Nexarch — Your Private Workspace" }],
+    type: "website",
+    url: "/",
+    siteName: "Nexarch",
+    title,
+    description,
+    images: [
+      {
+        url: "/nexarch-social-card.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Nexarch private workspace sign-in and product overview",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nexarch — Your Private Workspace",
-    description: "Nexarch brings your businesses, accounts, links, learning, goals and tasks together in one clear private workspace.",
-    images: ["/og-v2.png"],
+    title,
+    description,
+    images: ["/nexarch-social-card.jpg"],
   },
 };
 
