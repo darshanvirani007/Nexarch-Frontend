@@ -6,7 +6,7 @@ describe("verification email resend", () => {
     const resend = vi.fn().mockResolvedValue({ error: null });
 
     await resendSignupVerification({ resend }, "person@example.com", {
-      configuredUrl: "https://nexarch-frontend.vercel.app/",
+      configuredUrl: "https://www.nexarchapp.com/",
       environment: "production",
     });
 
@@ -15,7 +15,7 @@ describe("verification email resend", () => {
     const callback = new URL(request.options.emailRedirectTo);
     expect(request.type).toBe("signup");
     expect(request.email).toBe("person@example.com");
-    expect(callback.origin).toBe("https://nexarch-frontend.vercel.app");
+    expect(callback.origin).toBe("https://www.nexarchapp.com");
     expect(callback.pathname).toBe("/auth/callback");
     expect(callback.searchParams.get("next")).toBe("/onboarding");
   });

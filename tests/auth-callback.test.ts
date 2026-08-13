@@ -10,7 +10,7 @@ describe("email verification callback", () => {
       response.cookies.set("sb-session", "session-cookie", { httpOnly: true });
       return { error: null };
     });
-    const request = new NextRequest("https://nexarch-frontend.vercel.app/auth/callback?code=verification-code&next=/onboarding");
+    const request = new NextRequest("https://www.nexarchapp.com/auth/callback?code=verification-code&next=/onboarding");
 
     const response = await handleAuthCallback(request, { ...credentials, exchangeCode });
 
@@ -23,7 +23,7 @@ describe("email verification callback", () => {
   });
 
   it("uses a safe generic error destination when the code is missing", async () => {
-    const request = new NextRequest("https://nexarch-frontend.vercel.app/auth/callback?next=/onboarding");
+    const request = new NextRequest("https://www.nexarchapp.com/auth/callback?next=/onboarding");
     const response = await handleAuthCallback(request, credentials);
 
     expect(new URL(response.headers.get("location")!).pathname).toBe("/auth/confirmed");
@@ -32,7 +32,7 @@ describe("email verification callback", () => {
 
   it("uses the same safe error page when code exchange fails", async () => {
     const exchangeCode = vi.fn().mockResolvedValue({ error: { message: "expired token secret" } });
-    const request = new NextRequest("https://nexarch-frontend.vercel.app/auth/callback?code=expired&next=/onboarding");
+    const request = new NextRequest("https://www.nexarchapp.com/auth/callback?code=expired&next=/onboarding");
     const response = await handleAuthCallback(request, { ...credentials, exchangeCode });
     const location = response.headers.get("location")!;
 
@@ -42,7 +42,7 @@ describe("email verification callback", () => {
   });
 
   it("uses the safe error page when Supabase configuration is missing", async () => {
-    const request = new NextRequest("https://nexarch-frontend.vercel.app/auth/callback?code=verification-code&next=/onboarding");
+    const request = new NextRequest("https://www.nexarchapp.com/auth/callback?code=verification-code&next=/onboarding");
     const response = await handleAuthCallback(request, { supabaseUrl: null, supabaseKey: null });
     const destination = new URL(response.headers.get("location")!);
 
@@ -53,11 +53,11 @@ describe("email verification callback", () => {
 
   it("rejects an unsafe next value without leaking it", async () => {
     const exchangeCode = vi.fn().mockResolvedValue({ error: null });
-    const request = new NextRequest("https://nexarch-frontend.vercel.app/auth/callback?code=safe-code&next=https://attacker.example");
+    const request = new NextRequest("https://www.nexarchapp.com/auth/callback?code=safe-code&next=https://attacker.example");
     const response = await handleAuthCallback(request, { ...credentials, exchangeCode });
     const destination = new URL(response.headers.get("location")!);
 
-    expect(destination.origin).toBe("https://nexarch-frontend.vercel.app");
+    expect(destination.origin).toBe("https://www.nexarchapp.com");
     expect(destination.pathname).toBe("/auth/confirmed");
     expect(destination.searchParams.get("next")).toBe("/onboarding");
     expect(response.headers.get("location")).not.toContain("attacker.example");
@@ -66,7 +66,7 @@ describe("email verification callback", () => {
   it("does not log or render raw exchange errors", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const exchangeCode = vi.fn().mockRejectedValue(new Error("refresh-token-sensitive-value"));
-    const request = new NextRequest("https://nexarch-frontend.vercel.app/auth/callback?code=secret-code&next=/onboarding");
+    const request = new NextRequest("https://www.nexarchapp.com/auth/callback?code=secret-code&next=/onboarding");
     const response = await handleAuthCallback(request, { ...credentials, exchangeCode });
 
     expect(consoleError).not.toHaveBeenCalled();

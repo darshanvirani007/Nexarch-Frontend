@@ -14,7 +14,7 @@ import {
   type AppearancePreferences,
   type AppearanceTheme,
 } from "@/lib/appearance-preferences";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { useAuthSession } from "@/components/auth-session-provider";
 
 type ThemePaletteContextValue = {
   palette: ThemePalette;
@@ -38,6 +38,7 @@ function applyDensity(density: Density) {
 
 export function ThemePaletteProvider({ children }: { children: React.ReactNode }) {
   const { resolvedTheme, setTheme: setNextTheme } = useTheme();
+  const { user } = useAuthSession();
   const userIdRef = useRef<string | null>(null);
   const [preferences, setPreferences] = useState<AppearancePreferences>(DEFAULT_APPEARANCE_PREFERENCES);
 
@@ -60,29 +61,15 @@ export function ThemePaletteProvider({ children }: { children: React.ReactNode }
   }, [setNextTheme]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-
-    let active = true;
-    const supabase = createClient();
-    const applyForUser = (userId: string | null | undefined) => {
-      if (!active) return;
-      const nextPreferences = userId
-        ? readAppearancePreferences(window.localStorage, userId)
-        : DEFAULT_APPEARANCE_PREFERENCES;
+    const userId = user?.id;
+    const nextPreferences = userId
+      ? readAppearancePreferences(window.localStorage, userId)
+      : DEFAULT_APPEARANCE_PREFERENCES;
+    queueMicrotask(() => {
       applyPreferences(nextPreferences, userId ?? null);
       if (userId) persist(nextPreferences);
-    };
-
-    void supabase.auth.getSession().then(({ data }) => applyForUser(data.session?.user.id));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      applyForUser(session?.user.id);
     });
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, [applyPreferences, persist]);
+  }, [applyPreferences, persist, user?.id]);
 
   const setPalette = useCallback((nextPalette: ThemePalette) => {
     applyPalette(nextPalette);

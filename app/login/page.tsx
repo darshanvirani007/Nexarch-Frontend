@@ -11,6 +11,7 @@ import { InlineLoader } from "@/components/nexarch-loader";
 import { Button, Field, inputClass } from "@/components/ui";
 import { buildAuthCallbackUrl } from "@/lib/auth-redirect";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
 
 type AuthMode = "login" | "forgot";
 type OAuthProvider = "google" | "apple";
@@ -66,6 +67,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error(error.message);
+    if (isNexarchApiConfigured()) void nexarchApi.get<unknown>("/health").catch(() => undefined);
     router.push("/dashboard");
     router.refresh();
   };

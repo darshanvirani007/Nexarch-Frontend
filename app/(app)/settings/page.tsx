@@ -8,10 +8,10 @@ import { KeyRound, LogOut, Save } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { PageHeader } from "@/components/app-shell";
+import { useAuthSession } from "@/components/auth-session-provider";
 import { Button, Field, inputClass, SectionHeading, SelectControl } from "@/components/ui";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
-import type { ProfileResponse } from "@/lib/api/mappers";
 import { accountSettingsSchema, changePasswordSchema } from "@/lib/validations";
 import { useThemePalette } from "@/components/theme-palette-provider";
 import { densityOptions, isDensity, isThemePalette, themePalettes } from "@/lib/theme-palettes";
@@ -30,8 +30,8 @@ const emptyProfile: AccountSettingsValues = {
 
 export default function SettingsPage() {
   const { theme, setTheme, palette, setPalette, density, setDensity } = useThemePalette();
+  const { user, profile, profileLoading, profileError, refreshProfile, updateCachedProfile } = useAuthSession();
   const router = useRouter();
-  const [profileLoading, setProfileLoading] = useState(isSupabaseConfigured());
   const [profileSaving, setProfileSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
 
@@ -51,40 +51,8 @@ export default function SettingsPage() {
   } = useForm<ChangePasswordValues>({ resolver: zodResolver(changePasswordSchema), defaultValues: { password: "", confirmPassword: "" } });
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    let active = true;
-    const loadProfile = async () => {
-      try {
-        const supabase = createClient();
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (!active) return;
-        if (userError || !user) {
-          setProfileLoading(false);
-          toast.error(userError?.message || "Could not load your account");
-          return;
-        }
-        const response = isNexarchApiConfigured()
-          ? await nexarchApi.profile<ProfileResponse>()
-          : { profile: null, email: user.email ?? null };
-        if (!active) return;
-        const profile = response.profile;
-        resetProfile({
-          email: response.email || user.email || "",
-          fullName: profile?.full_name || String(user.user_metadata.full_name || user.user_metadata.name || ""),
-          country: profile?.country || String(user.user_metadata.country || ""),
-          contactNumber: profile?.contact_no || String(user.user_metadata.contact_number || ""),
-          timezone: profile?.timezone === "Europe/London" ? "Europe/London" : "Europe/Dublin",
-        });
-      } catch (error: unknown) {
-        if (!active) return;
-        toast.error(error instanceof Error ? error.message : "Could not load your account");
-      } finally {
-        if (active) setProfileLoading(false);
-      }
-    };
-    void loadProfile();
-    return () => { active = false; };
-  }, [resetProfile]);
+    resetProfile(profile);
+  }, [profile, resetProfile]);
 
   const saveProfile = handleProfileSubmit(async (values) => {
     if (!isSupabaseConfigured()) {
@@ -94,10 +62,9 @@ export default function SettingsPage() {
 
     setProfileSaving(true);
     const supabase = createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    if (!user) {
       setProfileSaving(false);
-      toast.error(userError?.message || "Could not verify your account");
+      toast.error("Could not verify your account");
       return;
     }
 
@@ -130,6 +97,7 @@ export default function SettingsPage() {
       toast.error(profileError.message);
       return;
     }
+    updateCachedProfile(values);
     toast.success(emailChanged ? "Profile saved. Confirm your new email address." : "Profile saved");
   });
 
@@ -160,12 +128,16 @@ export default function SettingsPage() {
       <section>
         <SectionHeading title="Account details" description="The personal information connected to your Nexarch account." />
         <form className="panel grid gap-4 rounded-[22px] p-6 sm:grid-cols-2" onSubmit={saveProfile} noValidate>
-          <Field label="Full name" error={profileErrors.fullName?.message}><input {...registerProfile("fullName")} className={inputClass} placeholder="Your full name" autoComplete="name" disabled={profileLoading} /></Field>
-          <Field label="Email address" error={profileErrors.email?.message}><input {...registerProfile("email")} type="email" className={inputClass} placeholder="you@example.com" autoComplete="email" disabled={profileLoading} /></Field>
-          <Field label="Country" error={profileErrors.country?.message}><input {...registerProfile("country")} className={inputClass} placeholder="Ireland" autoComplete="country-name" disabled={profileLoading} /></Field>
-          <Field label="Contact number" error={profileErrors.contactNumber?.message}><input {...registerProfile("contactNumber")} type="tel" className={inputClass} placeholder="+353 87 123 4567" autoComplete="tel" inputMode="tel" disabled={profileLoading} /></Field>
-          <Field label="Timezone" error={profileErrors.timezone?.message}><Controller name="timezone" control={profileControl} render={({ field }) => <SelectControl value={field.value} onValueChange={field.onChange} options={["Europe/Dublin", "Europe/London"]} disabled={profileLoading} />} /></Field>
-          <Button type="submit" className="sm:col-span-2 sm:justify-self-start" disabled={profileLoading || profileSaving}><Save className="size-4" /> {profileSaving ? "Saving…" : "Save account details"}</Button>
+          <Field label="Full name" error={profileErrors.fullName?.message}><input {...registerProfile("fullName")} className={inputClass} placeholder="Your full name" autoComplete="name" /></Field>
+          <Field label="Email address" error={profileErrors.email?.message}><input {...registerProfile("email")} type="email" className={inputClass} placeholder="you@example.com" autoComplete="email" /></Field>
+          <Field label="Country" error={profileErrors.country?.message}><input {...registerProfile("country")} className={inputClass} placeholder="Ireland" autoComplete="country-name" /></Field>
+          <Field label="Contact number" error={profileErrors.contactNumber?.message}><input {...registerProfile("contactNumber")} type="tel" className={inputClass} placeholder="+353 87 123 4567" autoComplete="tel" inputMode="tel" /></Field>
+          <Field label="Timezone" error={profileErrors.timezone?.message}><Controller name="timezone" control={profileControl} render={({ field }) => <SelectControl value={field.value} onValueChange={field.onChange} options={["Europe/Dublin", "Europe/London"]} />} /></Field>
+          <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+            <Button type="submit" disabled={profileSaving}><Save className="size-4" /> {profileSaving ? "Saving…" : "Save account details"}</Button>
+            {profileLoading && <p className="muted text-xs" role="status">Loading your saved profile…</p>}
+            {profileError && <button type="button" className="text-xs font-medium underline decoration-foreground/30 underline-offset-4" onClick={() => void refreshProfile()}>Saved profile unavailable · Try again</button>}
+          </div>
         </form>
       </section>
 

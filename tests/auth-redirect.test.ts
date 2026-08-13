@@ -4,12 +4,12 @@ import { buildAuthCallbackUrl, getAppUrl, safeInternalPath } from "../lib/auth-r
 describe("authentication redirect URLs", () => {
   it("uses the configured Vercel URL for production callbacks", () => {
     const callback = new URL(buildAuthCallbackUrl("/onboarding", {
-      configuredUrl: "https://nexarch-frontend.vercel.app",
+      configuredUrl: "https://www.nexarchapp.com",
       browserOrigin: "https://preview.example",
       environment: "production",
     }));
 
-    expect(callback.origin).toBe("https://nexarch-frontend.vercel.app");
+    expect(callback.origin).toBe("https://www.nexarchapp.com");
     expect(callback.pathname).toBe("/auth/callback");
     expect(callback.searchParams.get("next")).toBe("/onboarding");
   });
@@ -25,7 +25,7 @@ describe("authentication redirect URLs", () => {
   });
 
   it("normalizes trailing slashes", () => {
-    expect(getAppUrl({ configuredUrl: "https://nexarch-frontend.vercel.app/", environment: "production" })).toBe("https://nexarch-frontend.vercel.app");
+    expect(getAppUrl({ configuredUrl: "https://www.nexarchapp.com/", environment: "production" })).toBe("https://www.nexarchapp.com");
   });
 
   it("rejects external and protocol-relative next destinations", () => {

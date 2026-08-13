@@ -6,7 +6,7 @@ Everything you are building, one clear view.
 
 Nexarch brings your businesses, important links, learning, goals, tasks, job applications, and store updates into one private dashboard. It does not replace the services you already use. It gives you one place to find them and keep track of what matters.
 
-- Live frontend: [nexarch-frontend.vercel.app](https://nexarch-frontend.vercel.app)
+- Live frontend: [www.nexarchapp.com](https://www.nexarchapp.com)
 - Live Laravel API: [nexarch-api.onrender.com/api/v1](https://nexarch-api.onrender.com/api/v1)
 
 > This repository contains the **frontend application**. The Laravel API is a separate project, and the main application data is stored in Supabase.
@@ -208,7 +208,7 @@ Add these URLs to Supabase's allowed redirect URLs:
 
 ```text
 http://localhost:3000/**
-https://nexarch-frontend.vercel.app/**
+https://www.nexarchapp.com/**
 ```
 
 Password recovery and OAuth return through `/auth/callback`.
@@ -386,7 +386,7 @@ Add these variables in **Vercel → Project Settings → Environment Variables**
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-publishable-anon-key
-NEXT_PUBLIC_APP_URL=https://nexarch-frontend.vercel.app
+NEXT_PUBLIC_APP_URL=https://www.nexarchapp.com
 NEXT_PUBLIC_API_URL=https://nexarch-api.onrender.com/api/v1
 ```
 

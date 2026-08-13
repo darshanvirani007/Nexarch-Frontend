@@ -14,9 +14,10 @@ import { AuthGuard } from "./auth-guard";
 import { BrandMark } from "./brand-mark";
 import { NexarchLoader } from "./nexarch-loader";
 import { Button, IconButton, Modal } from "./ui";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { profileFirstName } from "@/lib/profile-name";
 import { useThemePalette } from "@/components/theme-palette-provider";
+import { useAuthSession } from "@/components/auth-session-provider";
+import { shouldBlockForApplicationData } from "@/lib/application-data";
 
 const navigation = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -87,26 +88,12 @@ function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (val
 
 function Header({ openMobile, openCommand }: { openMobile: () => void; openCommand: () => void }) {
   const { resolvedTheme, setTheme } = useThemePalette();
+  const { user, profile } = useAuthSession();
   const [mounted, setMounted] = useState(false);
-  const [profileName, setProfileName] = useState("there");
+  const profileName = profile.fullName.trim().split(/\s+/)[0] || profileFirstName(user);
   // Theme resolution is browser-only; defer the icon until after hydration.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    let active = true;
-    const supabase = createClient();
-    void supabase.auth.getUser().then(({ data }) => {
-      if (active) setProfileName(profileFirstName(data.user));
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) setProfileName(profileFirstName(session?.user));
-    });
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, []);
   return (
     <header className="topbar sticky top-0 z-20 flex h-[72px] items-center gap-3 border-b px-4 backdrop-blur-xl sm:px-6 lg:px-8">
       <IconButton label="Open navigation" onClick={openMobile} className="lg:hidden"><Menu className="size-4" /></IconButton>
@@ -128,6 +115,7 @@ function Header({ openMobile, openCommand }: { openMobile: () => void; openComma
 function ShellContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { dataLoading, dataError, reloadData } = useAppStore();
+  const waitForApplicationData = shouldBlockForApplicationData(pathname);
   const [mobile, setMobile] = useState(false);
   const [command, setCommand] = useState(false);
   useEffect(() => {
@@ -141,7 +129,7 @@ function ShellContent({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen">
       <Sidebar />
       {mobile && <div className="fixed inset-0 z-50 lg:hidden"><button className="absolute inset-0 bg-black/60" aria-label="Close navigation" onClick={() => setMobile(false)} /><div className="glass absolute inset-y-0 left-0 w-72"><button className="absolute right-4 top-4 z-10" onClick={() => setMobile(false)} aria-label="Close navigation"><X className="size-5" /></button><Sidebar mobile close={() => setMobile(false)} /></div></div>}
-      <div className="lg:pl-64"><Header openMobile={() => setMobile(true)} openCommand={() => setCommand(true)} /><main key={pathname} className="page-content mx-auto max-w-[1500px] p-4 pb-28 sm:p-7 lg:p-10">{dataLoading ? <NexarchLoader /> : dataError ? <AppDataError message={dataError} retry={reloadData} /> : children}</main></div>
+      <div className="lg:pl-64"><Header openMobile={() => setMobile(true)} openCommand={() => setCommand(true)} /><main key={pathname} className="page-content mx-auto max-w-[1500px] p-4 pb-28 sm:p-7 lg:p-10">{waitForApplicationData && dataLoading ? <NexarchLoader /> : waitForApplicationData && dataError ? <AppDataError message={dataError} retry={reloadData} /> : children}</main></div>
       <CommandMenu open={command} onOpenChange={setCommand} />
       <nav className="glass fixed inset-x-3 bottom-3 z-30 flex items-center justify-around rounded-2xl p-1.5 lg:hidden" aria-label="Mobile navigation">
         {navigation.slice(0, 5).map(({ href, label, icon: Icon }) => {
