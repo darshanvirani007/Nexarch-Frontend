@@ -17,11 +17,14 @@ import type {
 } from "@/lib/types";
 import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
 import { persistNewBusinessChildren } from "@/lib/api/business-persistence";
+import { myLinksService } from "@/lib/supabase/my-links";
+import { isDirectResource, ownedCrudService } from "@/lib/supabase/owned-crud";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   businessLinkRecords, businessSocialRecord, goalRecord, jobApplicationRecord, learningRecord, mapBusiness, mapGoal, mapJobApplication,
   mapLearning, mapPersonalLink, mapSyncedRecord, mapTask, mapDailyTask, personalLinkRecord,
   preservePendingSocialVisibility, taskRecord, type BusinessLinkRow, type BusinessRow, type DailyTaskRow, type GoalRow,
-  type JobApplicationRow, type LearningRow, type MyLinkRow, type SocialRow, type SyncedRecord,
+  type JobApplicationRow, type LearningRow, type SocialRow, type SyncedRecord,
   type TaskRow,
 } from "@/lib/api/mappers";
 
@@ -70,6 +73,24 @@ const AppStore = createContext<Store | null>(null);
 
 type Serializer<T> = (item: T, index: number) => SyncedRecord | null;
 
+async function createSyncedRecord(resource: string, payload: Record<string, unknown>) {
+  if (resource === "links") return myLinksService.create(payload);
+  if (isDirectResource(resource)) return ownedCrudService.create<unknown>(resource, payload);
+  return nexarchApi.create<unknown>(resource, payload);
+}
+
+async function updateSyncedRecord(resource: string, id: string, payload: Record<string, unknown>) {
+  if (resource === "links") return myLinksService.update(id, payload);
+  if (isDirectResource(resource)) return ownedCrudService.update(resource, id, payload);
+  return nexarchApi.update(resource, id, payload);
+}
+
+async function removeSyncedRecord(resource: string, id: string) {
+  if (resource === "links") return myLinksService.remove(id);
+  if (isDirectResource(resource)) return ownedCrudService.remove(resource, id);
+  return nexarchApi.remove(resource, id);
+}
+
 function usePersistentCollection<T extends { id: string }>(initial: T[], serialize: Serializer<T>, live: boolean) {
   const [items, setItemsInternal] = useState(initial);
   const itemsRef = useRef(initial);
@@ -96,7 +117,7 @@ function usePersistentCollection<T extends { id: string }>(initial: T[], seriali
       for (const [id, before] of previousRecords) {
         const after = nextRecords.get(id);
         if (before.record && (!after?.record || after.record.resource !== before.record.resource)) {
-          await nexarchApi.remove(before.record.resource, aliasesRef.current.get(id) ?? id);
+          await removeSyncedRecord(before.record.resource, aliasesRef.current.get(id) ?? id);
         }
       }
 
@@ -104,14 +125,14 @@ function usePersistentCollection<T extends { id: string }>(initial: T[], seriali
         if (!after.record) continue;
         const before = previousRecords.get(id);
         if (!before?.record || before.record.resource !== after.record.resource) {
-          const row = await nexarchApi.create<unknown>(after.record.resource, after.record.payload);
+          const row = await createSyncedRecord(after.record.resource, after.record.payload);
           const saved = mapSyncedRecord<T>(after.record.resource, row);
           aliasesRef.current.set(id, saved.id);
           const current = itemsRef.current.map((item) => item.id === id ? { ...item, ...saved } : item);
           itemsRef.current = current;
           setItemsInternal(current);
         } else if (JSON.stringify(before.record.payload) !== JSON.stringify(after.record.payload)) {
-          await nexarchApi.update(after.record.resource, aliasesRef.current.get(id) ?? id, after.record.payload);
+          await updateSyncedRecord(after.record.resource, aliasesRef.current.get(id) ?? id, after.record.payload);
         }
       }
     }).catch((error: unknown) => {
@@ -132,15 +153,16 @@ function businessBasePayload(business: Business) {
 }
 
 export function AppStoreProvider({ children }: { children: React.ReactNode }) {
-  const live = isNexarchApiConfigured();
-  const [businesses, setBusinessesInternal] = useState<Business[]>(live ? [] : demoBusinesses);
+  const directLive = isSupabaseConfigured();
+  const apiLive = isNexarchApiConfigured();
+  const [businesses, setBusinessesInternal] = useState<Business[]>(apiLive ? [] : demoBusinesses);
   const businessesRef = useRef(businesses);
   const noteTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  const [tasks, setTasks, hydrateTasks] = usePersistentCollection<Task>(live ? [] : demoTasks, taskRecord, live);
-  const [jobApplications, setJobApplications, hydrateJobApplications] = usePersistentCollection<JobApplication>([], jobApplicationRecord, live);
-  const [goals, setGoals, hydrateGoals] = usePersistentCollection<Goal>(live ? [] : demoGoals, goalRecord, live);
-  const [learning, setLearning, hydrateLearning] = usePersistentCollection<LearningItem>(live ? [] : demoLearning, learningRecord, live);
-  const [personalLinks, setPersonalLinks, hydratePersonalLinks] = usePersistentCollection<PersonalLink>([], personalLinkRecord, live);
+  const [tasks, setTasks, hydrateTasks] = usePersistentCollection<Task>(directLive ? [] : demoTasks, taskRecord, directLive);
+  const [jobApplications, setJobApplications, hydrateJobApplications] = usePersistentCollection<JobApplication>([], jobApplicationRecord, directLive);
+  const [goals, setGoals, hydrateGoals] = usePersistentCollection<Goal>(directLive ? [] : demoGoals, goalRecord, directLive);
+  const [learning, setLearning, hydrateLearning] = usePersistentCollection<LearningItem>(directLive ? [] : demoLearning, learningRecord, directLive);
+  const [personalLinks, setPersonalLinks, hydratePersonalLinks] = usePersistentCollection<PersonalLink>([], personalLinkRecord, directLive);
   const [commerceStores, setCommerceStores] = useState(demoCommerceStores);
   const [commerceProducts, setCommerceProducts] = useState(demoCommerceProducts);
   const [commerceOrders, setCommerceOrders] = useState(demoCommerceOrders);
@@ -149,7 +171,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const [commerceAds, setCommerceAds] = useState(demoCommerceAds);
   const [commerceSyncJobs, setCommerceSyncJobs] = useState(demoCommerceSyncJobs);
   const [dismissedCommerceAlertIds, setDismissedCommerceAlertIds] = useState<string[]>([]);
-  const [dataLoading, setDataLoading] = useState(live);
+  const [dataLoading, setDataLoading] = useState(directLive || apiLive);
   const [dataError, setDataError] = useState<string | null>(null);
   const [reloadSequence, setReloadSequence] = useState(0);
 
@@ -159,32 +181,26 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const reloadData = useCallback(() => {
-    if (!live) return;
+    if (!directLive && !apiLive) return;
     setDataLoading(true);
     setDataError(null);
     setReloadSequence((value) => value + 1);
-  }, [live]);
+  }, [apiLive, directLive]);
 
   useEffect(() => {
-    if (!live) return;
+    if (!directLive && !apiLive) return;
     let active = true;
-    const load = async () => {
+    const loadDirectData = async () => {
       try {
-        await nexarchApi.get<unknown>("/health");
-        const [activeBusinesses, archivedBusinesses, linkRows, learningRows, goalRows, dailyTaskRows, taskRows, jobRows] = await Promise.all([
-          nexarchApi.list<BusinessRow>("businesses"),
-          nexarchApi.list<BusinessRow>("businesses", "?archived=1"),
-          nexarchApi.list<MyLinkRow>("links"),
-          nexarchApi.list<LearningRow>("learning"),
-          nexarchApi.list<GoalRow>("goals"),
-          nexarchApi.list<DailyTaskRow>("daily-tasks"),
-          nexarchApi.list<TaskRow>("tasks"),
-          nexarchApi.list<JobApplicationRow>("job-applications"),
+        const [linkRows, learningRows, goalRows, dailyTaskRows, taskRows, jobRows] = await Promise.all([
+          myLinksService.list(),
+          ownedCrudService.list<LearningRow>("learning"),
+          ownedCrudService.list<GoalRow>("goals"),
+          ownedCrudService.list<DailyTaskRow>("daily-tasks"),
+          ownedCrudService.list<TaskRow>("tasks"),
+          ownedCrudService.list<JobApplicationRow>("job-applications"),
         ]);
-        const summaries = [...activeBusinesses, ...archivedBusinesses];
-        const detailedBusinesses = await Promise.all(summaries.map((business) => nexarchApi.get<BusinessRow>(`/businesses/${business.id}`)));
         if (!active) return;
-        hydrateBusinesses(detailedBusinesses.map(mapBusiness).sort((a, b) => a.displayOrder - b.displayOrder));
         hydratePersonalLinks(linkRows.filter((row) => row.is_active).map(mapPersonalLink));
         hydrateLearning(learningRows.map(mapLearning));
         hydrateGoals(goalRows.map(mapGoal));
@@ -200,9 +216,31 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         if (active) setDataLoading(false);
       }
     };
-    void load();
+
+    const loadBusinesses = async () => {
+      try {
+        await nexarchApi.get<unknown>("/health");
+        const [activeBusinesses, archivedBusinesses] = await Promise.all([
+          nexarchApi.list<BusinessRow>("businesses"),
+          nexarchApi.list<BusinessRow>("businesses", "?archived=1"),
+        ]);
+        const summaries = [...activeBusinesses, ...archivedBusinesses];
+        const detailed = await Promise.all(summaries.map((business) => nexarchApi.get<BusinessRow>(`/businesses/${business.id}`)));
+        if (active) hydrateBusinesses(detailed.map(mapBusiness).sort((a, b) => a.displayOrder - b.displayOrder));
+      } catch (error: unknown) {
+        if (!active) return;
+        const message = error instanceof Error ? error.message : "Businesses could not be loaded";
+        if (!directLive) setDataError(message);
+        toast.error(message);
+      } finally {
+        if (active && !directLive) setDataLoading(false);
+      }
+    };
+
+    if (directLive) void loadDirectData();
+    if (apiLive) void loadBusinesses();
     return () => { active = false; };
-  }, [hydrateBusinesses, hydrateGoals, hydrateJobApplications, hydrateLearning, hydratePersonalLinks, hydrateTasks, live, reloadSequence]);
+  }, [apiLive, directLive, hydrateBusinesses, hydrateGoals, hydrateJobApplications, hydrateLearning, hydratePersonalLinks, hydrateTasks, reloadSequence]);
 
   const persistLinks = useCallback(async (previous: Business, next: Business) => {
     const before = businessLinkRecords(previous);
@@ -246,7 +284,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       displayOrder: businessesRef.current.length,
       websiteStatus: "unknown", isActive: true,
     };
-    if (!live) {
+    if (!apiLive) {
       hydrateBusinesses([...businessesRef.current, optimistic]);
       return { business: optimistic };
     }
@@ -267,14 +305,14 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         ? "Business created, but its saved details could not be refreshed. Reload the page to check them."
         : undefined;
     return { business: created, warning };
-  }, [hydrateBusinesses, live]);
+  }, [apiLive, hydrateBusinesses]);
 
   const updateBusiness = useCallback<Store["updateBusiness"]>((id, patch) => {
     const previous = businessesRef.current.find((item) => item.id === id);
     if (!previous) return;
     const next = { ...previous, ...patch };
     hydrateBusinesses(businessesRef.current.map((item) => item.id === id ? next : item));
-    if (!live) return;
+    if (!apiLive) return;
 
     if (Object.keys(patch).length === 1 && Object.hasOwn(patch, "notes")) {
       const existing = noteTimersRef.current.get(id);
@@ -299,12 +337,12 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       );
       hydrateBusinesses(businessesRef.current.map((item) => item.id === id ? refreshed : item));
     })().catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Business changes could not be saved"));
-  }, [hydrateBusinesses, live, persistLinks, persistSocials]);
+  }, [apiLive, hydrateBusinesses, persistLinks, persistSocials]);
 
   const removeBusiness = useCallback<Store["removeBusiness"]>((id) => {
     hydrateBusinesses(businessesRef.current.filter((item) => item.id !== id));
-    if (live) void nexarchApi.remove("businesses", id).catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Business could not be deleted"));
-  }, [hydrateBusinesses, live]);
+    if (apiLive) void nexarchApi.remove("businesses", id).catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Business could not be deleted"));
+  }, [apiLive, hydrateBusinesses]);
 
   const moveBusiness = useCallback<Store["moveBusiness"]>((id, direction) => {
     const sorted = [...businessesRef.current].sort((a, b) => a.displayOrder - b.displayOrder);
@@ -314,8 +352,8 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     [sorted[from], sorted[to]] = [sorted[to], sorted[from]];
     const next = sorted.map((item, index) => ({ ...item, displayOrder: index }));
     hydrateBusinesses(next);
-    if (live) void Promise.all(next.map((business) => nexarchApi.update<BusinessRow>("businesses", business.id, { display_order: business.displayOrder }))).catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Business order could not be saved"));
-  }, [hydrateBusinesses, live]);
+    if (apiLive) void Promise.all(next.map((business) => nexarchApi.update<BusinessRow>("businesses", business.id, { display_order: business.displayOrder }))).catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Business order could not be saved"));
+  }, [apiLive, hydrateBusinesses]);
 
   const setStatus = useCallback<Store["setStatus"]>((businessId, status, responseTimeMs, httpStatusCode, checkedAt) => {
     hydrateBusinesses(businessesRef.current.map((item) => item.id === businessId ? {
