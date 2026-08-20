@@ -17,6 +17,6 @@ describe("verification email resend", () => {
     expect(request.email).toBe("person@example.com");
     expect(callback.origin).toBe("https://www.nexarchapp.com");
     expect(callback.pathname).toBe("/auth/callback");
-    expect(callback.searchParams.get("next")).toBe("/onboarding");
+    expect(callback.searchParams.get("next")).toBe("/login");
   });
 });

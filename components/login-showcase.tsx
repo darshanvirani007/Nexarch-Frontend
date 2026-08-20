@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import { PublicFooter } from "@/components/public-footer";
 
 const ambientPalettes = [
+  { name: "White", background: "#ffffff", foreground: "#111110" },
   { name: "Graphite", background: "#e5e5e1", foreground: "#111110" },
   { name: "Slate", background: "#dbe2e6", foreground: "#11161a" },
   { name: "Executive Navy", background: "#dae2ee", foreground: "#101724" },

@@ -17,6 +17,6 @@ export function resendSignupVerification(
   return auth.resend({
     type: "signup",
     email,
-    options: { emailRedirectTo: buildAuthCallbackUrl("/onboarding", appUrlOptions) },
+    options: { emailRedirectTo: buildAuthCallbackUrl("/login", appUrlOptions) },
   });
 }

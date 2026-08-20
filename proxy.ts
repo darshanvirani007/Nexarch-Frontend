@@ -17,7 +17,7 @@ export async function proxy(request: NextRequest) {
     },
   });
   const { data: { user } } = await supabase.auth.getUser();
-  const protectedRoute = /^\/(dashboard|businesses|commerce|learning|goals|tasks|links|settings|onboarding|reset-password)(?:\/|$)/.test(request.nextUrl.pathname);
+  const protectedRoute = /^\/(dashboard|businesses|commerce|learning|goals|tasks|links|settings|reset-password)(?:\/|$)/.test(request.nextUrl.pathname);
   if (protectedRoute && !user) return NextResponse.redirect(new URL("/login", request.url));
   if ((request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup") && user) return NextResponse.redirect(new URL("/dashboard", request.url));
   return response;

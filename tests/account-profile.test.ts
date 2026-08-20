@@ -53,4 +53,8 @@ describe("account profile hydration", () => {
       timezone: "Europe/London",
     });
   });
+
+  it("preserves another supported saved timezone", () => {
+    expect(accountProfileFromUser(user({ user_metadata: { timezone: "Asia/Kolkata" } })).timezone).toBe("Asia/Kolkata");
+  });
 });

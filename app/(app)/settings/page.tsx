@@ -16,6 +16,7 @@ import { accountSettingsSchema, changePasswordSchema } from "@/lib/validations";
 import { useThemePalette } from "@/components/theme-palette-provider";
 import { densityOptions, isDensity, isThemePalette, themePalettes } from "@/lib/theme-palettes";
 import { isAppearanceTheme } from "@/lib/appearance-preferences";
+import { timezoneOptions } from "@/lib/timezones";
 
 type AccountSettingsValues = z.input<typeof accountSettingsSchema>;
 type ChangePasswordValues = z.input<typeof changePasswordSchema>;
@@ -130,7 +131,7 @@ export default function SettingsPage() {
           <Field label="Email address" error={profileErrors.email?.message}><input {...registerProfile("email")} type="email" className={inputClass} placeholder="you@example.com" autoComplete="email" /></Field>
           <Field label="Country" error={profileErrors.country?.message}><input {...registerProfile("country")} className={inputClass} placeholder="Ireland" autoComplete="country-name" /></Field>
           <Field label="Contact number" error={profileErrors.contactNumber?.message}><input {...registerProfile("contactNumber")} type="tel" className={inputClass} placeholder="+353 87 123 4567" autoComplete="tel" inputMode="tel" /></Field>
-          <Field label="Timezone" error={profileErrors.timezone?.message}><Controller name="timezone" control={profileControl} render={({ field }) => <SelectControl value={field.value} onValueChange={field.onChange} options={["Europe/Dublin", "Europe/London"]} />} /></Field>
+          <Field label="Timezone" error={profileErrors.timezone?.message}><Controller name="timezone" control={profileControl} render={({ field }) => <SelectControl value={field.value} onValueChange={field.onChange} options={timezoneOptions} />} /></Field>
           <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
             <Button type="submit" disabled={profileSaving}><Save className="size-4" /> {profileSaving ? "Saving…" : "Save account details"}</Button>
             {profileLoading && <p className="muted text-xs" role="status">Loading your saved profile…</p>}

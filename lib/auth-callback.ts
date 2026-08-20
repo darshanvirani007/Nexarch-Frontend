@@ -9,9 +9,10 @@ export type CodeExchange = (input: {
   response: CallbackResponse;
   supabaseUrl: string;
   supabaseKey: string;
+  endSession: boolean;
 }) => Promise<{ error: unknown | null }>;
 
-const exchangeSupabaseCode: CodeExchange = async ({ code, request, response, supabaseUrl, supabaseKey }) => {
+const exchangeSupabaseCode: CodeExchange = async ({ code, request, response, supabaseUrl, supabaseKey, endSession }) => {
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll: () => request.cookies.getAll(),
@@ -20,19 +21,21 @@ const exchangeSupabaseCode: CodeExchange = async ({ code, request, response, sup
       },
     },
   });
-  return supabase.auth.exchangeCodeForSession(code);
+  const exchange = await supabase.auth.exchangeCodeForSession(code);
+  if (exchange.error || !endSession) return exchange;
+
+  return supabase.auth.signOut({ scope: "local" });
 };
 
 function callbackFailure(request: NextRequest, nextPath: string) {
-  const path = nextPath === "/onboarding"
-    ? "/auth/confirmed?status=error"
+  const path = nextPath === "/login"
+    ? "/login?error=verification_failed"
     : "/login?error=oauth_callback_failed";
   return NextResponse.redirect(new URL(path, request.url));
 }
 
 function callbackSuccessPath(nextPath: string) {
-  if (nextPath !== "/onboarding") return nextPath;
-  return `/auth/confirmed?next=${encodeURIComponent(nextPath)}`;
+  return nextPath === "/login" ? "/login?verified=1" : nextPath;
 }
 
 export async function handleAuthCallback(request: NextRequest, options: {
@@ -59,6 +62,7 @@ export async function handleAuthCallback(request: NextRequest, options: {
       response,
       supabaseUrl,
       supabaseKey,
+      endSession: destination === "/login",
     });
     if (error) return callbackFailure(request, destination);
     return response;

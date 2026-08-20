@@ -67,7 +67,6 @@ Commerce is intentionally not connected to live store APIs or Supabase tables ye
 | `/login` | Sign in, open password recovery, or continue with Google/Apple |
 | `/signup` | Create an account with email, full name, country, contact number, and password |
 | `/reset-password` | Choose a new password after using the recovery email |
-| `/onboarding` | Set up the first parts of a Nexarch account |
 | `/dashboard` | Main personal overview |
 | `/links` | Personal link directory |
 | `/businesses` | Business directory |

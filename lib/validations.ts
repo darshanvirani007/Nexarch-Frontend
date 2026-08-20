@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { personalLinkKinds } from "./types";
+import { getPhoneCountry, validatePhoneForCountry } from "./phone-countries";
+import { timezoneValues } from "./timezones";
 
 const optionalUrl = z
   .string()
@@ -12,12 +14,21 @@ const optionalUrl = z
 const accountProfileFields = {
   email: z.email("Enter a valid email address"),
   fullName: z.string().trim().min(2, "Full name is required").max(100, "Full name is too long"),
-  country: z.string().trim().min(2, "Country is required").max(80, "Country name is too long"),
-  contactNumber: z.string().trim().regex(/^\+?[0-9][0-9\s().-]{6,24}$/, "Enter a valid contact number"),
+  country: z.string().trim().refine((value) => Boolean(getPhoneCountry(value)), "Select a country"),
+  contactNumber: z.string().trim().min(1, "Contact number is required"),
 };
 
-export const signUpSchema = z.object({
-  ...accountProfileFields,
+const accountProfileSchema = z.object(accountProfileFields).superRefine((values, context) => {
+  if (getPhoneCountry(values.country) && !validatePhoneForCountry(values.contactNumber, values.country)) {
+    context.addIssue({
+      code: "custom",
+      path: ["contactNumber"],
+      message: `Enter a valid mobile number for ${values.country}`,
+    });
+  }
+});
+
+export const signUpSchema = accountProfileSchema.safeExtend({
   password: z.string().min(8, "Password must contain at least 8 characters").max(72, "Password is too long"),
   confirmPassword: z.string(),
 }).refine((values) => values.password === values.confirmPassword, {
@@ -25,9 +36,8 @@ export const signUpSchema = z.object({
   path: ["confirmPassword"],
 });
 
-export const accountSettingsSchema = z.object({
-  ...accountProfileFields,
-  timezone: z.enum(["Europe/Dublin", "Europe/London"]),
+export const accountSettingsSchema = accountProfileSchema.safeExtend({
+  timezone: z.enum(timezoneValues),
 });
 
 export const changePasswordSchema = z.object({

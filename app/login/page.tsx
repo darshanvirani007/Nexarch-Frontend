@@ -32,7 +32,14 @@ export default function LoginPage() {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
 
   useEffect(() => {
-    const error = new URLSearchParams(window.location.search).get("error");
+    const search = new URLSearchParams(window.location.search);
+    const error = search.get("error");
+    if (search.get("verified") === "1") {
+      toast.success("Email verified. You can now sign in.");
+    }
+    if (error === "verification_failed") {
+      toast.error("Email verification could not be completed. The link may be invalid or expired.");
+    }
     if (error === "oauth_callback_failed") {
       toast.error("Sign-in could not be completed. Please try again.");
     }

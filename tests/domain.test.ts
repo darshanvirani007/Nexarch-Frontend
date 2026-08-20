@@ -17,10 +17,15 @@ describe("account sign-up", () => {
   it("rejects mismatched passwords and invalid contact details", () => {
     expect(signUpSchema.safeParse({ ...validAccount, confirmPassword: "different-password" }).success).toBe(false);
     expect(signUpSchema.safeParse({ ...validAccount, contactNumber: "abc" }).success).toBe(false);
+    expect(signUpSchema.safeParse({ ...validAccount, contactNumber: "+353 87 12" }).success).toBe(false);
+    expect(signUpSchema.safeParse({ ...validAccount, country: "United Kingdom" }).success).toBe(false);
+    expect(signUpSchema.safeParse({ ...validAccount, country: "Not a country" }).success).toBe(false);
   });
 
   it("validates editable account details and password changes", () => {
     expect(accountSettingsSchema.safeParse({ ...validAccount, timezone: "Europe/Dublin" }).success).toBe(true);
+    expect(accountSettingsSchema.safeParse({ ...validAccount, timezone: "Asia/Kolkata" }).success).toBe(true);
+    expect(accountSettingsSchema.safeParse({ ...validAccount, timezone: "Invalid/Timezone" }).success).toBe(false);
     expect(changePasswordSchema.safeParse({ password: "new-password", confirmPassword: "new-password" }).success).toBe(true);
     expect(changePasswordSchema.safeParse({ password: "new-password", confirmPassword: "wrong-password" }).success).toBe(false);
   });

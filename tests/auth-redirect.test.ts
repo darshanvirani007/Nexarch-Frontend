@@ -3,7 +3,7 @@ import { buildAuthCallbackUrl, getAppUrl, safeInternalPath } from "../lib/auth-r
 
 describe("authentication redirect URLs", () => {
   it("uses the configured Vercel URL for production callbacks", () => {
-    const callback = new URL(buildAuthCallbackUrl("/onboarding", {
+    const callback = new URL(buildAuthCallbackUrl("/login", {
       configuredUrl: "https://www.nexarchapp.com",
       browserOrigin: "https://preview.example",
       environment: "production",
@@ -11,7 +11,7 @@ describe("authentication redirect URLs", () => {
 
     expect(callback.origin).toBe("https://www.nexarchapp.com");
     expect(callback.pathname).toBe("/auth/callback");
-    expect(callback.searchParams.get("next")).toBe("/onboarding");
+    expect(callback.searchParams.get("next")).toBe("/login");
   });
 
   it("never falls back to localhost in production", () => {
@@ -29,9 +29,9 @@ describe("authentication redirect URLs", () => {
   });
 
   it("rejects external and protocol-relative next destinations", () => {
-    expect(safeInternalPath("https://attacker.example")).toBe("/onboarding");
-    expect(safeInternalPath("//attacker.example")).toBe("/onboarding");
-    expect(safeInternalPath("javascript:alert(1)")).toBe("/onboarding");
+    expect(safeInternalPath("https://attacker.example")).toBe("/login");
+    expect(safeInternalPath("//attacker.example")).toBe("/login");
+    expect(safeInternalPath("javascript:alert(1)")).toBe("/login");
     expect(safeInternalPath("/dashboard")).toBe("/dashboard");
   });
 });
