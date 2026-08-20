@@ -30,6 +30,10 @@ function requestPinned(target: URL, address: string, family: 4 | 6, method: "HEA
       port: target.protocol === "https:" ? 443 : 80,
       path: `${target.pathname}${target.search}`,
       method,
+      // Node 20+ may otherwise enable autoSelectFamily and call a custom
+      // lookup function using the `all: true` callback shape. Pinning the
+      // family keeps the callback contract consistent on Vercel's runtime.
+      family,
       headers: {
         "user-agent": "Nexarch-Website-Checker/1.0",
         ...(method === "GET" ? { range: "bytes=0-0" } : {}),
@@ -155,7 +159,15 @@ export async function POST(request: NextRequest) {
     const responseTimeMs = Date.now() - started;
     const status = httpStatusCode >= 500 ? "offline" : httpStatusCode >= 400 || responseTimeMs > 2_500 ? "degraded" : "online";
     return saveCheck({ status, httpStatusCode, responseTimeMs });
-  } catch {
-    return saveCheck({ status: "offline", responseTimeMs: Date.now() - started, errorMessage: "Website check request failed." });
+  } catch (error) {
+    const errorCode = error instanceof Error && "code" in error && typeof error.code === "string"
+      ? error.code
+      : "REQUEST_FAILED";
+    console.error("website_check_request_failed", { code: errorCode });
+    return saveCheck({
+      status: "offline",
+      responseTimeMs: Date.now() - started,
+      errorMessage: `Website check request failed (${errorCode}).`,
+    });
   }
 }
