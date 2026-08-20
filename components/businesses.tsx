@@ -20,6 +20,7 @@ import { businessSchema, socialAccountSchema } from "@/lib/validations";
 import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
 import type { WebsiteCheckRow } from "@/lib/api/mappers";
 import type { Business, BusinessLink, WebsiteStatus } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
 import { cn, initials } from "@/lib/utils";
 import { useAppStore } from "./app-store";
 import { Badge, Button, Field, inputClass, Modal, SelectControl } from "./ui";
@@ -132,9 +133,12 @@ export async function checkBusinessWebsite(business: Business, setStatus: Return
       toast.success(`${business.name} is ${status}`);
       return;
     }
+    const { data: sessionData } = await createClient().auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) throw new Error("Authentication required");
     const response = await fetch("/api/website-status", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({ businessId: business.id, url: business.websiteUrl }),
     });
     const result = await response.json() as { status: WebsiteStatus; responseTimeMs?: number; httpStatusCode?: number; error?: string };
