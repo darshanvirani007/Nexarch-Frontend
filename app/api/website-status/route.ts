@@ -14,8 +14,10 @@ const requestSchema = z.object({
 
 export const runtime = "nodejs";
 
-function requestPinned(target: URL, address: string, family: 4 | 6) {
-  return new Promise<number>((resolve, reject) => {
+type PinnedResponse = { statusCode: number; location?: string };
+
+function requestPinned(target: URL, address: string, family: 4 | 6, method: "HEAD" | "GET") {
+  return new Promise<PinnedResponse>((resolve, reject) => {
     const request = target.protocol === "https:" ? httpsRequest : httpRequest;
     const pinnedLookup = ((
       _hostname: string,
@@ -27,18 +29,61 @@ function requestPinned(target: URL, address: string, family: 4 | 6) {
       hostname: target.hostname,
       port: target.protocol === "https:" ? 443 : 80,
       path: `${target.pathname}${target.search}`,
-      method: "HEAD",
-      headers: { host: target.hostname, "user-agent": "Nexarch-Website-Checker/1.0" },
+      method,
+      headers: {
+        "user-agent": "Nexarch-Website-Checker/1.0",
+        ...(method === "GET" ? { range: "bytes=0-0" } : {}),
+      },
       lookup: pinnedLookup,
       servername: target.protocol === "https:" ? target.hostname : undefined,
     }, (response) => {
-      response.resume();
-      resolve(response.statusCode ?? 0);
+      const result = {
+        statusCode: response.statusCode ?? 0,
+        location: typeof response.headers.location === "string" ? response.headers.location : undefined,
+      };
+      response.destroy();
+      resolve(result);
     });
     outgoing.setTimeout(8_000, () => outgoing.destroy(new Error("Website check timed out")));
     outgoing.on("error", reject);
     outgoing.end();
   });
+}
+
+function validateTarget(target: URL) {
+  return (target.protocol === "http:" || target.protocol === "https:")
+    && !target.username
+    && !target.password
+    && !target.port
+    && target.hostname !== "localhost"
+    && !target.hostname.endsWith(".local");
+}
+
+async function publicAddress(target: URL) {
+  const addresses = await lookup(target.hostname, { all: true, verbatim: true });
+  if (!addresses.length || addresses.some(({ address }) => isPrivateAddress(address))) {
+    throw new Error("Private network target");
+  }
+  const preferred = addresses.find(({ family }) => family === 4) ?? addresses[0];
+  return preferred as { address: string; family: 4 | 6 };
+}
+
+async function checkWithSafeRedirects(initialTarget: URL) {
+  let target = initialTarget;
+  for (let redirectCount = 0; redirectCount <= 3; redirectCount += 1) {
+    if (!validateTarget(target)) throw new Error("Unsafe website target");
+    const pinnedAddress = await publicAddress(target);
+    let response = await requestPinned(target, pinnedAddress.address, pinnedAddress.family, "HEAD");
+    if (response.statusCode === 405 || response.statusCode === 501) {
+      response = await requestPinned(target, pinnedAddress.address, pinnedAddress.family, "GET");
+    }
+    if (response.statusCode < 300 || response.statusCode >= 400 || !response.location) {
+      return response.statusCode;
+    }
+    if (redirectCount === 3) return response.statusCode;
+    target = new URL(response.location, target);
+  }
+  return 0;
 }
 
 async function authenticatedBusiness(request: NextRequest, businessId: string) {
@@ -90,24 +135,19 @@ export async function POST(request: NextRequest) {
     });
   };
   const target = new URL(parsed.data.url);
-  if (target.username || target.password || target.port || target.hostname === "localhost" || target.hostname.endsWith(".local")) {
+  if (!validateTarget(target)) {
     return NextResponse.json({ error: "This website address cannot be checked" }, { status: 400 });
   }
-  let pinnedAddress: { address: string; family: 4 | 6 };
   try {
-    const addresses = await lookup(target.hostname, { all: true, verbatim: true });
-    if (!addresses.length || addresses.some(({ address }) => isPrivateAddress(address))) {
-      return NextResponse.json({ error: "Private network URLs cannot be checked" }, { status: 400 });
-    }
-    pinnedAddress = addresses[0] as { address: string; family: 4 | 6 };
+    await publicAddress(target);
   } catch {
     return NextResponse.json({ error: "The website address could not be resolved" }, { status: 400 });
   }
   const started = Date.now();
   try {
-    const httpStatusCode = await requestPinned(target, pinnedAddress.address, pinnedAddress.family);
+    const httpStatusCode = await checkWithSafeRedirects(target);
     if (httpStatusCode >= 300 && httpStatusCode < 400) {
-      return saveCheck({ status: "degraded", responseTimeMs: Date.now() - started });
+      return saveCheck({ status: "degraded", httpStatusCode, responseTimeMs: Date.now() - started });
     }
     const responseTimeMs = Date.now() - started;
     const status = httpStatusCode >= 500 ? "offline" : httpStatusCode >= 400 || responseTimeMs > 2_500 ? "degraded" : "online";

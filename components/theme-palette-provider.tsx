@@ -37,6 +37,12 @@ function applyDensity(density: Density) {
   document.documentElement.dataset.density = density;
 }
 
+function applyThemeClass(theme: AppearanceTheme) {
+  const dark = theme === "dark"
+    || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("dark", dark);
+}
+
 export function ThemePaletteProvider({ children }: { children: React.ReactNode }) {
   const { resolvedTheme, setTheme: setNextTheme } = useTheme();
   const { user } = useAuthSession();
@@ -46,11 +52,17 @@ export function ThemePaletteProvider({ children }: { children: React.ReactNode }
   const [preferences, setPreferences] = useState<AppearancePreferences>(DEFAULT_APPEARANCE_PREFERENCES);
 
   const transitionAppearance = useCallback((apply: () => void) => {
-    const root = document.documentElement;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       apply();
       return;
     }
+    if (document.startViewTransition) {
+      document.startViewTransition(() => {
+        apply();
+      });
+      return;
+    }
+    const root = document.documentElement;
     if (appearanceTransitionTimerRef.current !== null) {
       window.clearTimeout(appearanceTransitionTimerRef.current);
     }
@@ -130,7 +142,10 @@ export function ThemePaletteProvider({ children }: { children: React.ReactNode }
 
   const setTheme = useCallback((nextTheme: AppearanceTheme) => {
     if (!isAppearanceTheme(nextTheme)) return;
-    transitionAppearance(() => setNextTheme(nextTheme));
+    transitionAppearance(() => {
+      applyThemeClass(nextTheme);
+      setNextTheme(nextTheme);
+    });
     setPreferences((current) => {
       const next = { ...current, theme: nextTheme };
       persist(next);

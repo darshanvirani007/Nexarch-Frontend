@@ -198,6 +198,13 @@ html.appearance-transitioning body *::after {
   transition-duration: 420ms !important;
   transition-timing-function: cubic-bezier(.22, 1, .36, 1) !important;
 }
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 460ms;
+  animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+}
+::view-transition-old(root) { animation-name: appearance-fade-out; }
+::view-transition-new(root) { animation-name: appearance-fade-in; }
 body::before {
   position: fixed;
   inset: 0;
@@ -503,4 +510,14 @@ button:active:not(:disabled), [role="button"]:active {
 @keyframes login-palette-label-in {
   from { opacity: 0; transform: translateY(2px); }
   to { opacity: .55; transform: translateY(0); }
+}
+
+@keyframes appearance-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes appearance-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

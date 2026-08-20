@@ -136,9 +136,9 @@ export async function checkBusinessWebsite(business: Business, setStatus: Return
     if (!response.ok) throw new Error(result.error || "Status check failed");
     setStatus(business.id, result.status, result.responseTimeMs, result.httpStatusCode, result.checkedAt);
     toast.success(`${business.name} is ${result.status}`);
-  } catch {
-    setStatus(business.id, "offline");
-    toast.error(`Could not reach ${business.name}`);
+  } catch (error: unknown) {
+    setStatus(business.id, business.websiteStatus === "checking" ? "unknown" : business.websiteStatus);
+    toast.error(error instanceof Error ? error.message : `Could not check ${business.name}`);
   }
 }
 
