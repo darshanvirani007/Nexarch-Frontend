@@ -137,6 +137,10 @@ function usePersistentCollection<T extends { id: string }>(initial: T[], seriali
         }
       }
     }).catch((error: unknown) => {
+      if (itemsRef.current === next) {
+        itemsRef.current = previous;
+        setItemsInternal(previous);
+      }
       toast.error(error instanceof Error ? error.message : "Changes could not be saved");
     });
   }, [live, serialize]);

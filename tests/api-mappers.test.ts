@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   businessSocialRecord, goalRecord, jobApplicationRecord, learningRecord, mapBusiness, mapGoal, mapJobApplication,
-  mapLearning, mapPersonalLink, preservePendingSocialVisibility, taskRecord, type BusinessRow,
+  mapLearning, mapPersonalLink, personalLinkRecord, preservePendingSocialVisibility, taskRecord, type BusinessRow,
 } from "../lib/api/mappers";
 import type { Business, Goal, JobApplication, LearningItem, Task } from "../lib/types";
 
@@ -81,5 +81,16 @@ describe("Laravel API mappings", () => {
 
     expect(reconciled.socials.find((social) => social.id === "social-false")?.showOnCard).toBe(false);
     expect(reconciled.socials.find((social) => social.id === "social-missing")?.showOnCard).toBe(false);
+  });
+
+  it("round-trips canonical My Links values for work, email, and others", () => {
+    const work = personalLinkRecord({ id: "1", name: "Freelance", kind: "Freelance account", category: "Work", url: "https://example.com", createdAt: "2026-08-20" }, 0);
+    const email = personalLinkRecord({ id: "2", name: "Inbox", kind: "Email inbox", category: "Email", url: "https://mail.example.com", createdAt: "2026-08-20" }, 1);
+    const other = personalLinkRecord({ id: "3", name: "Tool", kind: "Other", category: "Others", url: "https://tool.example.com", createdAt: "2026-08-20" }, 2);
+
+    expect(work.payload).toMatchObject({ link_type: "freelance", category: "work" });
+    expect(email.payload).toMatchObject({ link_type: "email", category: "email" });
+    expect(other.payload).toMatchObject({ link_type: "other", category: "others" });
+    expect(mapPersonalLink({ id: "1", link_type: "freelance", category: "work", name: "Freelance", url: "https://example.com", display_order: 0, is_active: true, created_at: "2026-08-20" })).toMatchObject({ kind: "Freelance account", category: "Work" });
   });
 });

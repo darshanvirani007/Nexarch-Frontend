@@ -209,6 +209,7 @@ const personalCategories: Record<string, PersonalLinkCategory> = {
 };
 
 const personalKinds: Record<string, PersonalLinkKind> = {
+  freelance: "Freelance account",
   "freelance account": "Freelance account",
   upwork: "Upwork",
   fiverr: "Fiverr",
@@ -327,9 +328,13 @@ export type SyncedRecord = { resource: string; payload: Record<string, unknown> 
 export function personalLinkRecord(link: PersonalLink, displayOrder: number): SyncedRecord {
   const categories: Record<PersonalLinkCategory, string> = {
     Work: "work", Email: "email", Blog: "blog", YouTube: "youtube",
-    Development: "development", Social: "social", Others: "other",
+    Development: "development", Social: "social", Others: "others",
   };
-  return { resource: "links", payload: { link_type: link.kind, category: categories[link.category], name: link.name, url: link.url, display_order: displayOrder, is_active: true } };
+  const kinds: Partial<Record<PersonalLinkKind, string>> = {
+    "Freelance account": "freelance",
+    "Email inbox": "email",
+  };
+  return { resource: "links", payload: { link_type: kinds[link.kind] ?? link.kind.toLowerCase(), category: categories[link.category], name: link.name, url: link.url, display_order: displayOrder, is_active: true } };
 }
 
 export function learningRecord(item: LearningItem, displayOrder: number): SyncedRecord {
