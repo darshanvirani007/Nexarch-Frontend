@@ -105,10 +105,10 @@ async function authenticatedBusiness(request: NextRequest, businessId: string) {
 
 export async function POST(request: NextRequest) {
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "A valid website URL is required" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "A valid website URL is required (WC_INPUT)" }, { status: 400 });
   const auth = await authenticatedBusiness(request, parsed.data.businessId);
   if (!auth) {
-    return NextResponse.json({ error: "Business not found" }, { status: 404 });
+    return NextResponse.json({ error: "Your session or business could not be verified (WC_AUTH)" }, { status: 404 });
   }
   const saveCheck = async (check: {
     status: "online" | "offline" | "degraded";
@@ -126,7 +126,10 @@ export async function POST(request: NextRequest) {
       error_message: check.errorMessage ?? null,
       checked_at: checkedAt,
     });
-    if (error) return NextResponse.json({ error: "The website result could not be saved" }, { status: 500 });
+    if (error) {
+      console.error("website_check_insert_failed", { code: error.code });
+      return NextResponse.json({ error: "The website was checked, but its result could not be saved (WC_SAVE)" }, { status: 500 });
+    }
     return NextResponse.json({
       status: check.status,
       httpStatusCode: check.httpStatusCode,
@@ -136,12 +139,12 @@ export async function POST(request: NextRequest) {
   };
   const target = new URL(parsed.data.url);
   if (!validateTarget(target)) {
-    return NextResponse.json({ error: "This website address cannot be checked" }, { status: 400 });
+    return NextResponse.json({ error: "This website address cannot be checked (WC_TARGET)" }, { status: 400 });
   }
   try {
     await publicAddress(target);
   } catch {
-    return NextResponse.json({ error: "The website address could not be resolved" }, { status: 400 });
+    return NextResponse.json({ error: "The website address could not be resolved safely (WC_DNS)" }, { status: 400 });
   }
   const started = Date.now();
   try {
