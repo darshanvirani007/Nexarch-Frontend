@@ -136,6 +136,14 @@ function usePersistentCollection<T extends { id: string }>(initial: T[], seriali
           await updateSyncedRecord(after.record.resource, aliasesRef.current.get(id) ?? id, after.record.payload);
         }
       }
+
+      const touchesPersonalLinks = [...previousRecords.values(), ...nextRecords.values()]
+        .some(({ record }) => record?.resource === "links");
+      if (touchesPersonalLinks) {
+        if (next.length > previous.length) toast.success("Link added to My Links");
+        else if (next.length < previous.length) toast.success("Link deleted");
+        else toast.success("Link updated");
+      }
     }).catch((error: unknown) => {
       if (itemsRef.current === next) {
         itemsRef.current = previous;

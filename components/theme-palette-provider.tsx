@@ -15,6 +15,7 @@ import {
   type AppearanceTheme,
 } from "@/lib/appearance-preferences";
 import { useAuthSession } from "@/components/auth-session-provider";
+import { appearanceService } from "@/lib/supabase/appearance";
 
 type ThemePaletteContextValue = {
   palette: ThemePalette;
@@ -40,6 +41,7 @@ export function ThemePaletteProvider({ children }: { children: React.ReactNode }
   const { resolvedTheme, setTheme: setNextTheme } = useTheme();
   const { user } = useAuthSession();
   const userIdRef = useRef<string | null>(null);
+  const remoteQueueRef = useRef(Promise.resolve());
   const [preferences, setPreferences] = useState<AppearancePreferences>(DEFAULT_APPEARANCE_PREFERENCES);
 
   const persist = useCallback((nextPreferences: AppearancePreferences) => {
@@ -50,6 +52,9 @@ export function ThemePaletteProvider({ children }: { children: React.ReactNode }
     } catch {
       // Appearance still applies for this session when browser storage is unavailable.
     }
+    remoteQueueRef.current = remoteQueueRef.current
+      .then(() => appearanceService.save(userId, nextPreferences))
+      .catch(() => undefined);
   }, []);
 
   const applyPreferences = useCallback((nextPreferences: AppearancePreferences, userId: string | null) => {
@@ -62,13 +67,21 @@ export function ThemePaletteProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const userId = user?.id;
-    const nextPreferences = userId
+    const cachedPreferences = userId
       ? readAppearancePreferences(window.localStorage, userId)
       : DEFAULT_APPEARANCE_PREFERENCES;
     queueMicrotask(() => {
-      applyPreferences(nextPreferences, userId ?? null);
-      if (userId) persist(nextPreferences);
+      applyPreferences(cachedPreferences, userId ?? null);
     });
+    if (userId) {
+      void appearanceService.get(userId).then((remotePreferences) => {
+        if (userIdRef.current !== userId) return;
+        const nextPreferences = remotePreferences ?? cachedPreferences;
+        applyPreferences(nextPreferences, userId);
+        writeAppearancePreferences(window.localStorage, userId, nextPreferences);
+        if (!remotePreferences) persist(nextPreferences);
+      }).catch(() => undefined);
+    }
   }, [applyPreferences, persist, user?.id]);
 
   const setPalette = useCallback((nextPalette: ThemePalette) => {
