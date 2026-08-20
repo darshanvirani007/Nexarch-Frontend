@@ -38,6 +38,9 @@ export default function LoginPage() {
     if (search.get("verified") === "1") {
       toast.success("Email verified. You can now sign in.");
     }
+    if (search.get("account_deleted") === "1") {
+      toast.success("Your Nexarch account and active workspace data were deleted.");
+    }
     if (error === "verification_failed") {
       toast.error("Email verification could not be completed. The link may be invalid or expired.");
     }

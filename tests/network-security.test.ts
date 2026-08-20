@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPrivateAddress } from "../app/api/website-status/route";
+import { isPrivateAddress } from "../lib/network-security";
 
 describe("website-check network boundary", () => {
   it("blocks private, loopback, link-local, and reserved addresses", () => {

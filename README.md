@@ -138,10 +138,15 @@ What each line means:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase's public/publishable browser key |
 | `NEXT_PUBLIC_APP_URL` | The URL where this frontend is running |
 | `NEXT_PUBLIC_API_URL` | The Laravel API that reads and writes application data |
+| `NEXT_PUBLIC_PRIVACY_CONTROLLER_NAME` | The legal name of the organisation or person responsible for processing personal data |
+| `NEXT_PUBLIC_PRIVACY_EMAIL` | A monitored address for privacy and data-rights requests |
+| `NEXT_PUBLIC_PRIVACY_ADDRESS` | The controller's registered or business contact address shown in the privacy notice |
 
 `NEXT_PUBLIC_*` values are visible to browser code. Never put a database password, service-role key, JWT secret, Laravel `APP_KEY`, or private API token in one of these variables.
 
 The real `.env.local` file is ignored by Git. Commit `.env.example` only, and keep it filled with placeholders rather than secrets.
+
+The three privacy values are public legal contact details. Replace every placeholder before production deployment and keep the privacy inbox monitored.
 
 ### 4. Start the development server
 

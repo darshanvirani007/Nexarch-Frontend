@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { KeyRound, LogOut, Save } from "lucide-react";
+import Link from "next/link";
+import { Download, KeyRound, LogOut, Save, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { PageHeader } from "@/components/app-shell";
 import { useAuthSession } from "@/components/auth-session-provider";
-import { Button, Field, inputClass, SectionHeading, SelectControl } from "@/components/ui";
+import { Button, Field, inputClass, Modal, SectionHeading, SelectControl } from "@/components/ui";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { profileService } from "@/lib/supabase/profile";
 import { accountSettingsSchema, changePasswordSchema } from "@/lib/validations";
@@ -18,6 +19,7 @@ import { densityOptions, isDensity, isThemePalette, themePalettes } from "@/lib/
 import { isAppearanceTheme } from "@/lib/appearance-preferences";
 import { timezoneOptions } from "@/lib/timezones";
 import { passwordRequirements, protectedPasswordInputProps } from "@/lib/password-policy";
+import { deleteMyAccount, downloadJsonExport, exportMyData } from "@/lib/privacy";
 
 type AccountSettingsValues = z.input<typeof accountSettingsSchema>;
 type ChangePasswordValues = z.input<typeof changePasswordSchema>;
@@ -36,6 +38,10 @@ export default function SettingsPage() {
   const router = useRouter();
   const [profileSaving, setProfileSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const {
     register: registerProfile,
@@ -122,6 +128,32 @@ export default function SettingsPage() {
     router.push("/login");
   };
 
+  const exportData = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      downloadJsonExport(await exportMyData());
+      toast.success("Your data export is ready");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Your data could not be exported");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const eraseAccount = async () => {
+    if (deleteConfirmation !== "DELETE" || deleting) return;
+    setDeleting(true);
+    try {
+      await deleteMyAccount();
+      router.replace("/login?account_deleted=1");
+      router.refresh();
+    } catch (error: unknown) {
+      setDeleting(false);
+      toast.error(error instanceof Error ? error.message : "Your account could not be deleted");
+    }
+  };
+
   return <>
     <PageHeader eyebrow="Workspace" title="Settings" description="Manage your account, appearance, and dashboard preferences." />
     <div className="grid max-w-4xl gap-8">
@@ -159,7 +191,18 @@ export default function SettingsPage() {
           <Field label="Density"><SelectControl value={density} onValueChange={(value) => { if (isDensity(value)) setDensity(value); }} options={densityOptions} /></Field>
         </div>
       </section>
+      <section>
+        <SectionHeading title="Privacy & your data" description="Access, download, or erase the personal data connected to your account." />
+        <div className="panel grid gap-4 rounded-[22px] p-6 sm:grid-cols-2">
+          <div className="rounded-2xl border p-5"><ShieldCheck className="size-5" /><h3 className="mt-4 text-sm font-semibold">Privacy notice</h3><p className="muted mt-1 text-xs leading-relaxed">Understand what Nexarch processes, why it is needed, and your data-protection rights.</p><Link href="/privacy" className="mt-4 inline-block text-sm font-medium underline underline-offset-4">Read privacy notice</Link></div>
+          <div className="rounded-2xl border p-5"><Download className="size-5" /><h3 className="mt-4 text-sm font-semibold">Download your data</h3><p className="muted mt-1 text-xs leading-relaxed">Export your account and workspace records in a portable JSON file.</p><Button type="button" variant="secondary" className="mt-4" disabled={exporting} onClick={() => void exportData()}><Download className="size-4" /> {exporting ? "Preparing…" : "Download data"}</Button></div>
+          <div className="rounded-2xl border border-red-500/20 p-5 sm:col-span-2"><Trash2 className="size-5 text-red-500" /><h3 className="mt-4 text-sm font-semibold">Delete your account</h3><p className="muted mt-1 text-xs leading-relaxed">Permanently erase your account, workspace records and server-side development secrets. Download your data first if you need a copy.</p><Button type="button" variant="danger" className="mt-4" onClick={() => setDeleteOpen(true)}><Trash2 className="size-4" /> Delete account</Button></div>
+        </div>
+      </section>
       <section><SectionHeading title="Session" /><div className="panel flex items-center justify-between gap-4 rounded-[22px] p-6"><div><p className="text-sm font-medium">Sign out securely</p><p className="muted mt-1 text-xs">End this session on this device.</p></div><Button variant="secondary" onClick={logout}><LogOut className="size-4" /> Sign out</Button></div></section>
     </div>
+    <Modal open={deleteOpen} onOpenChange={(value) => { if (!deleting) { setDeleteOpen(value); if (!value) setDeleteConfirmation(""); } }} title="Permanently delete account" description="This cannot be undone. Your active Nexarch account and workspace data will be erased.">
+      <div className="grid gap-4"><Field label="Type DELETE to confirm"><input value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} className={inputClass} autoComplete="off" /></Field><div className="flex justify-end gap-2"><Button type="button" variant="ghost" disabled={deleting} onClick={() => setDeleteOpen(false)}>Cancel</Button><Button type="button" variant="danger" disabled={deleteConfirmation !== "DELETE" || deleting} onClick={() => void eraseAccount()}>{deleting ? "Deleting…" : "Delete permanently"}</Button></div></div>
+    </Modal>
   </>;
 }
