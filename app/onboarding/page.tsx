@@ -8,6 +8,7 @@ import { Button, Field, inputClass, ProgressBar, SelectControl } from "@/compone
 import { useThemePalette } from "@/components/theme-palette-provider";
 import { densityOptions, isDensity } from "@/lib/theme-palettes";
 import { isAppearanceTheme } from "@/lib/appearance-preferences";
+import { PublicFooter } from "@/components/public-footer";
 
 const steps = [
   { title: "Build your private workspace", description: "Choose the areas you want Nexarch to help you keep track of.", icon: CircleUserRound },
@@ -35,5 +36,6 @@ export default function OnboardingPage() {
       </div>
       <div className="mt-8 flex justify-between"><Button variant="ghost" disabled={step === 0} onClick={() => setStep((value) => value - 1)}><ArrowLeft className="size-4" /> Back</Button><Button onClick={() => step === steps.length - 1 ? router.push("/dashboard") : setStep((value) => value + 1)}>{step === steps.length - 1 ? <><Check className="size-4" /> Finish setup</> : <>Continue <ArrowRight className="size-4" /></>}</Button></div>
     </div>
+    <PublicFooter />
   </main>;
 }

@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowRight, Check } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
+import { PublicFooter } from "@/components/public-footer";
 
 export type ConfirmationStatus = "success" | "error";
 export const EMAIL_CONFIRMATION_DELAY_MS = 2_000;
@@ -26,8 +27,8 @@ export function startEmailConfirmationRedirect(
 export function AuthConfirmationView({ status, nextPath }: { status: ConfirmationStatus; nextPath: string }) {
   const success = status === "success";
   return (
-    <main className="flex min-h-screen items-center justify-center p-6 sm:p-12">
-      <section className="page-content w-full max-w-lg">
+    <main className="flex min-h-screen flex-col p-6 sm:p-12">
+      <section className="page-content my-auto w-full max-w-lg self-center py-10">
         <Link href="/" className="mx-auto mb-8 flex w-fit items-center gap-3">
           <BrandMark />
           <span className="font-semibold">Nexarch</span>
@@ -63,6 +64,7 @@ export function AuthConfirmationView({ status, nextPath }: { status: Confirmatio
           )}
         </div>
       </section>
+      <PublicFooter />
     </main>
   );
 }

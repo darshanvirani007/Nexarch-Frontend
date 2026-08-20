@@ -9,6 +9,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { InlineLoader } from "@/components/nexarch-loader";
 import { Button, Field, inputClass } from "@/components/ui";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { PublicFooter } from "@/components/public-footer";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -30,8 +31,8 @@ export default function ResetPasswordPage() {
     router.refresh();
   };
 
-  return <main className="flex min-h-screen items-center justify-center p-6 sm:p-12">
-    <div className="w-full max-w-md">
+  return <main className="flex min-h-screen flex-col p-6 sm:p-12">
+    <div className="my-auto w-full max-w-md self-center py-10">
       <Link href="/" className="mb-12 flex items-center gap-3"><BrandMark /><span className="font-semibold">Nexarch</span></Link>
       <p className="muted mb-2 text-xs font-medium uppercase tracking-[.16em]">Secure account recovery</p>
       <h1 className="text-3xl font-semibold tracking-tight">Choose a new password</h1>
@@ -42,5 +43,6 @@ export default function ResetPasswordPage() {
         <Button type="submit" disabled={loading}>{loading && <InlineLoader />}{loading ? "Updating…" : "Update password"} {!loading && <ArrowRight className="size-4" />}</Button>
       </form>
     </div>
+    <PublicFooter />
   </main>;
 }

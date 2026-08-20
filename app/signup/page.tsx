@@ -16,6 +16,7 @@ import { resendSignupVerification } from "@/lib/auth-verification";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { signUpSchema } from "@/lib/validations";
 import { initializeUserAppearance } from "@/lib/appearance-preferences";
+import { PublicFooter } from "@/components/public-footer";
 
 type SignUpValues = z.input<typeof signUpSchema>;
 
@@ -103,8 +104,8 @@ export default function SignUpPage() {
   };
 
   return <main className="grid min-h-screen lg:grid-cols-2">
-    <section className="flex items-center justify-center p-6 sm:p-12">
-      <div className="w-full max-w-xl">
+    <section className="flex flex-col p-6 sm:p-12">
+      <div className="my-auto w-full max-w-xl self-center py-10">
         <Link href="/" className="mb-10 flex items-center gap-3"><BrandMark /><span className="font-semibold">Nexarch</span></Link>
         <p className="muted mb-2 text-xs font-medium uppercase tracking-[.16em]">Create your account</p>
         <h1 className="text-3xl font-semibold tracking-tight">Create your Nexarch</h1>
@@ -140,7 +141,8 @@ export default function SignUpPage() {
         )}
         <p className="muted mt-8 rounded-xl border p-3 text-xs leading-relaxed">Your contact details are stored in your private profile and are only accessible to your account.</p>
       </div>
+      <div className="lg:hidden"><PublicFooter /></div>
     </section>
-    <aside className="hidden border-l bg-foreground text-background lg:flex lg:flex-col lg:justify-between lg:p-14"><div className="text-sm font-medium">Everything you’re building, one clear view.</div><div><h2 className="max-w-xl text-5xl font-semibold leading-[1.05] tracking-[-.05em]">One account.<br />One clear view.<br />Everything that matters.</h2><ul className="mt-10 space-y-3 text-sm opacity-70">{["Keep your businesses and accounts together","Track learning, goals and daily priorities","Know what needs your attention"].map((item) => <li key={item} className="flex items-center gap-2"><Check className="size-4" />{item}</li>)}</ul></div><p className="text-xs opacity-50">Nexarch · Your Private Workspace</p></aside>
+    <aside className="hidden border-l bg-foreground text-background lg:flex lg:flex-col lg:justify-between lg:p-14"><div className="text-sm font-medium">Everything you’re building, one clear view.</div><div><h2 className="max-w-xl text-5xl font-semibold leading-[1.05] tracking-[-.05em]">One account.<br />One clear view.<br />Everything that matters.</h2><ul className="mt-10 space-y-3 text-sm opacity-70">{["Keep your businesses and accounts together","Track learning, goals and daily priorities","Know what needs your attention"].map((item) => <li key={item} className="flex items-center gap-2"><Check className="size-4" />{item}</li>)}</ul></div><div className="grid gap-2"><p className="text-xs opacity-50">Nexarch · Your Private Workspace</p><PublicFooter inverse /></div></aside>
   </main>;
 }

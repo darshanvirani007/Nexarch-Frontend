@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, KeyRound, Mail } from "lucide-react";
+import { ArrowRight, KeyRound, Mail } from "lucide-react";
 import { SiApple, SiGoogle } from "react-icons/si";
 import { toast } from "sonner";
 import { BrandMark } from "@/components/brand-mark";
@@ -12,6 +12,8 @@ import { Button, Field, inputClass } from "@/components/ui";
 import { buildAuthCallbackUrl } from "@/lib/auth-redirect";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
+import { PublicFooter } from "@/components/public-footer";
+import { LoginShowcase } from "@/components/login-showcase";
 
 type AuthMode = "login" | "forgot";
 type OAuthProvider = "google" | "apple";
@@ -102,8 +104,8 @@ export default function LoginPage() {
   const supportingText = mode === "forgot" ? "We’ll send instructions to your email." : "Everything important, one clear view.";
 
   return <main className="grid min-h-screen lg:grid-cols-2">
-    <section className="flex items-center justify-center p-6 sm:p-12">
-      <div className="w-full max-w-md">
+    <section className="flex flex-col p-6 sm:p-12">
+      <div className="my-auto w-full max-w-md self-center py-10">
         <Link href="/" className="mb-12 flex items-center gap-3"><BrandMark /><span className="font-semibold">Nexarch</span></Link>
         <p className="muted mb-2 text-xs font-medium uppercase tracking-[.16em]">Private by design</p>
         <h1 className="text-3xl font-semibold tracking-tight">{heading}</h1>
@@ -140,7 +142,8 @@ export default function LoginPage() {
         </div>
 
       </div>
+      <div className="lg:hidden"><PublicFooter /></div>
     </section>
-    <aside className="hidden border-l bg-foreground text-background lg:flex lg:flex-col lg:justify-between lg:p-14"><div className="text-sm font-medium">Everything you’re building, one clear view.</div><div><h2 className="max-w-xl text-5xl font-semibold leading-[1.05] tracking-[-.05em]">Your businesses.<br />Your accounts.<br />Your next moves.</h2><ul className="mt-10 space-y-3 text-sm opacity-70">{["Keep every important link and workspace close","Track learning, goals and daily priorities","See what needs attention without platform hopping"].map((item) => <li key={item} className="flex items-center gap-2"><Check className="size-4" />{item}</li>)}</ul></div><p className="text-xs opacity-50">Nexarch · Your Private Workspace</p></aside>
+    <LoginShowcase />
   </main>;
 }
