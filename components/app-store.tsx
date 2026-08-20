@@ -15,7 +15,6 @@ import type {
 import type {
   Business, BusinessLink, Goal, JobApplication, LearningItem, PersonalLink, SocialAccount, Task, WebsiteStatus,
 } from "@/lib/types";
-import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
 import { persistNewBusinessChildren } from "@/lib/api/business-persistence";
 import { myLinksService } from "@/lib/supabase/my-links";
 import { isDirectResource, ownedCrudService } from "@/lib/supabase/owned-crud";
@@ -77,19 +76,19 @@ type Serializer<T> = (item: T, index: number) => SyncedRecord | null;
 async function createSyncedRecord(resource: string, payload: Record<string, unknown>) {
   if (resource === "links") return myLinksService.create(payload);
   if (isDirectResource(resource)) return ownedCrudService.create<unknown>(resource, payload);
-  return nexarchApi.create<unknown>(resource, payload);
+  throw new Error("This data type is not available for direct persistence.");
 }
 
 async function updateSyncedRecord(resource: string, id: string, payload: Record<string, unknown>) {
   if (resource === "links") return myLinksService.update(id, payload);
   if (isDirectResource(resource)) return ownedCrudService.update(resource, id, payload);
-  return nexarchApi.update(resource, id, payload);
+  throw new Error("This data type is not available for direct persistence.");
 }
 
 async function removeSyncedRecord(resource: string, id: string) {
   if (resource === "links") return myLinksService.remove(id);
   if (isDirectResource(resource)) return ownedCrudService.remove(resource, id);
-  return nexarchApi.remove(resource, id);
+  throw new Error("This data type is not available for direct persistence.");
 }
 
 function usePersistentCollection<T extends { id: string }>(initial: T[], serialize: Serializer<T>, live: boolean) {
@@ -167,7 +166,6 @@ function businessBasePayload(business: Business) {
 
 export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const directLive = isSupabaseConfigured();
-  const apiLive = isNexarchApiConfigured();
   const [businesses, setBusinessesInternal] = useState<Business[]>(directLive ? [] : demoBusinesses);
   const businessesRef = useRef(businesses);
   const noteTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
@@ -184,7 +182,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const [commerceAds, setCommerceAds] = useState(demoCommerceAds);
   const [commerceSyncJobs, setCommerceSyncJobs] = useState(demoCommerceSyncJobs);
   const [dismissedCommerceAlertIds, setDismissedCommerceAlertIds] = useState<string[]>([]);
-  const [dataLoading, setDataLoading] = useState(directLive || apiLive);
+  const [dataLoading, setDataLoading] = useState(directLive);
   const [dataError, setDataError] = useState<string | null>(null);
   const [reloadSequence, setReloadSequence] = useState(0);
 
@@ -194,14 +192,14 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const reloadData = useCallback(() => {
-    if (!directLive && !apiLive) return;
+    if (!directLive) return;
     setDataLoading(true);
     setDataError(null);
     setReloadSequence((value) => value + 1);
-  }, [apiLive, directLive]);
+  }, [directLive]);
 
   useEffect(() => {
-    if (!directLive && !apiLive) return;
+    if (!directLive) return;
     let active = true;
     const loadDirectData = async () => {
       try {
@@ -234,7 +232,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
 
     if (directLive) void loadDirectData();
     return () => { active = false; };
-  }, [apiLive, directLive, hydrateBusinesses, hydrateGoals, hydrateJobApplications, hydrateLearning, hydratePersonalLinks, hydrateTasks, reloadSequence]);
+  }, [directLive, hydrateBusinesses, hydrateGoals, hydrateJobApplications, hydrateLearning, hydratePersonalLinks, hydrateTasks, reloadSequence]);
 
   const persistLinks = useCallback(async (previous: Business, next: Business) => {
     const before = businessLinkRecords(previous);
@@ -334,17 +332,17 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   }, [directLive, hydrateBusinesses, persistLinks, persistSocials]);
 
   const removeBusiness = useCallback<Store["removeBusiness"]>((id) => {
-    if (!apiLive) {
-      toast.error("Business deletion is temporarily unavailable because secure cleanup requires the Nexarch API.");
+    if (!directLive) {
+      toast.error("Business deletion is unavailable in demo mode.");
       return;
     }
     const previous = businessesRef.current;
     hydrateBusinesses(previous.filter((item) => item.id !== id));
-    void nexarchApi.remove("businesses", id).catch((error: unknown) => {
+    void businessesService.remove(id).catch((error: unknown) => {
       hydrateBusinesses(previous);
       toast.error(error instanceof Error ? error.message : "Business could not be deleted");
     });
-  }, [apiLive, hydrateBusinesses]);
+  }, [directLive, hydrateBusinesses]);
 
   const moveBusiness = useCallback<Store["moveBusiness"]>((id, direction) => {
     const sorted = [...businessesRef.current].sort((a, b) => a.displayOrder - b.displayOrder);

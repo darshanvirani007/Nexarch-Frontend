@@ -5,7 +5,7 @@ import {
 } from "../lib/api/mappers";
 import type { Business, Goal, JobApplication, LearningItem, Task } from "../lib/types";
 
-describe("Laravel API mappings", () => {
+describe("database mappings", () => {
   it("maps an owned business workspace and its shortcuts", () => {
     const row: BusinessRow = {
       id: "business-1",

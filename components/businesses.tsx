@@ -17,8 +17,6 @@ import {
 import { toast } from "sonner";
 import type { z } from "zod";
 import { businessSchema, socialAccountSchema } from "@/lib/validations";
-import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
-import type { WebsiteCheckRow } from "@/lib/api/mappers";
 import type { Business, BusinessLink, WebsiteStatus } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { cn, initials } from "@/lib/utils";
@@ -126,13 +124,6 @@ export async function checkBusinessWebsite(business: Business, setStatus: Return
   if (!business.websiteUrl) return;
   setStatus(business.id, "checking");
   try {
-    if (isNexarchApiConfigured()) {
-      const result = await nexarchApi.checkWebsite<WebsiteCheckRow>(business.id, business.websiteUrl);
-      const status = ["online", "offline", "degraded"].includes(result.status) ? result.status as WebsiteStatus : "unknown";
-      setStatus(business.id, status, result.response_time_ms ?? undefined, result.http_status_code ?? undefined, result.checked_at);
-      toast.success(`${business.name} is ${status}`);
-      return;
-    }
     const { data: sessionData } = await createClient().auth.getSession();
     const accessToken = sessionData.session?.access_token;
     if (!accessToken) throw new Error("Authentication required");
@@ -141,9 +132,9 @@ export async function checkBusinessWebsite(business: Business, setStatus: Return
       headers: { "content-type": "application/json", authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({ businessId: business.id, url: business.websiteUrl }),
     });
-    const result = await response.json() as { status: WebsiteStatus; responseTimeMs?: number; httpStatusCode?: number; error?: string };
+    const result = await response.json() as { status: WebsiteStatus; responseTimeMs?: number; httpStatusCode?: number; checkedAt?: string; error?: string };
     if (!response.ok) throw new Error(result.error || "Status check failed");
-    setStatus(business.id, result.status, result.responseTimeMs, result.httpStatusCode);
+    setStatus(business.id, result.status, result.responseTimeMs, result.httpStatusCode, result.checkedAt);
     toast.success(`${business.name} is ${result.status}`);
   } catch {
     setStatus(business.id, "offline");

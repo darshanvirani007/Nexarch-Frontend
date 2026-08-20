@@ -90,6 +90,12 @@ export const businessesService = {
     return data as BusinessRow;
   },
 
+  async remove(id: string): Promise<void> {
+    const businessId = z.uuid().parse(id);
+    const { error } = await createClient().rpc("delete_business", { target_business_id: businessId });
+    if (error) throw databaseError(error, "The business could not be deleted.");
+  },
+
   async createBusinessLink(businessId: string, payload: unknown): Promise<BusinessLinkRow> {
     const values = linkSchema.parse(payload);
     const userId = await currentUserId();

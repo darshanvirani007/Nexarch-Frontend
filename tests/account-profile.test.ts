@@ -14,7 +14,7 @@ function user(overrides: Partial<User> = {}): User {
 }
 
 describe("account profile hydration", () => {
-  it("shows Supabase identity metadata before the Laravel profile returns", () => {
+  it("shows Supabase identity metadata before the saved profile returns", () => {
     expect(accountProfileFromUser(user({
       email: "darshan@example.com",
       user_metadata: {
@@ -31,7 +31,7 @@ describe("account profile hydration", () => {
     });
   });
 
-  it("merges saved Laravel fields over the immediate identity fallback", () => {
+  it("merges saved profile fields over the immediate identity fallback", () => {
     const identity = user({
       email: "auth@example.com",
       user_metadata: { full_name: "Auth Name", country: "Ireland" },

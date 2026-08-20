@@ -7,7 +7,7 @@ This is an engineering and operations checklist, not a legal certification. The 
 - Set `NEXT_PUBLIC_PRIVACY_CONTROLLER_NAME`, `NEXT_PUBLIC_PRIVACY_EMAIL`, and `NEXT_PUBLIC_PRIVACY_ADDRESS` to the controller's real legal details in Vercel.
 - Make sure the privacy mailbox is monitored and that identity-verified rights requests can normally be completed within one month.
 - Apply `supabase/migrations/202608200009_gdpr_account_erasure.sql` and test export and deletion using a disposable account.
-- Record the Supabase, Vercel, and Render service regions, subprocessors, data-processing agreements, and the transfer safeguard used for any processing outside the EEA.
+- Record the Supabase and Vercel service regions, subprocessors, data-processing agreements, and the transfer safeguard used for any processing outside the EEA.
 - Define and document exact retention periods for application logs, hosting logs, authentication logs, support records, and provider backups. Configure each provider accordingly.
 - Keep a processing inventory covering account/profile data, workspace content, authentication/security data, IP-derived country defaults, and encrypted device-local vault data.
 - Establish an incident process for investigation, documentation, processor notification, affected-user communication, and supervisory-authority notification where legally required.
