@@ -7,9 +7,8 @@ import type { Session, User } from "@supabase/supabase-js";
 import {
   accountProfileFromUser, emptyAccountProfile, mergeAccountProfile, type AccountProfile,
 } from "@/lib/account-profile";
-import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
-import type { ProfileResponse } from "@/lib/api/mappers";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { profileService } from "@/lib/supabase/profile";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -70,9 +69,7 @@ export function AuthSessionProvider({ children }: { children: React.ReactNode })
     setProfileLoading(true);
     setProfileError(null);
     try {
-      const response = isNexarchApiConfigured()
-        ? await nexarchApi.profile<ProfileResponse>()
-        : { profile: null, email: user.email ?? null };
+      const response = await profileService.get();
       if (requestId !== profileRequestRef.current || sessionRef.current?.user.id !== user.id) return;
       setProfile(mergeAccountProfile(user, response));
     } catch (error: unknown) {

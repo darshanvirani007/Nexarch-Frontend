@@ -130,3 +130,7 @@ Current frontend public variables remain `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLI
 Learning, goals, daily tasks, general tasks, and job applications now use the authenticated Supabase client for list/create/update/delete. Their Zod schemas reproduce the Laravel validation rules. The accompanying `202608200001_direct_crud_constraints.sql` migration adds database checks (initially `NOT VALID` for historical-data safety) and user/order indexes. Existing rows should be audited and each constraint explicitly validated after deployment.
 
 Direct data and Laravel business data now load independently. The global application loader is released when direct Supabase data finishes; a slow or unavailable Render service no longer prevents My Links, Learning, Goals, Tasks, or Job Applications from hydrating. Business loading remains temporarily asynchronous through Laravel and reports its own failure toast.
+
+## Phase 3 implementation note
+
+Profile loading and profile upsert now use the authenticated Supabase client and the existing `profiles.id = auth.uid()` RLS policies. Email and password changes remain correctly handled by Supabase Auth. The profile constraint migration preserves Laravel's field-length and timezone rules at the database boundary. No Laravel files or routes were changed; they remain available for rollback until an explicitly authorized backend-cleanup phase.

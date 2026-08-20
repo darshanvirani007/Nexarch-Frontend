@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/app-shell";
 import { useAuthSession } from "@/components/auth-session-provider";
 import { Button, Field, inputClass, SectionHeading, SelectControl } from "@/components/ui";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
+import { profileService } from "@/lib/supabase/profile";
 import { accountSettingsSchema, changePasswordSchema } from "@/lib/validations";
 import { useThemePalette } from "@/components/theme-palette-provider";
 import { densityOptions, isDensity, isThemePalette, themePalettes } from "@/lib/theme-palettes";
@@ -71,7 +71,7 @@ export default function SettingsPage() {
     const emailChanged = user.email !== values.email;
     const { error: authError } = await supabase.auth.updateUser({
       ...(emailChanged ? { email: values.email } : {}),
-      data: { full_name: values.fullName, country: values.country, contact_number: values.contactNumber },
+      data: { full_name: values.fullName, country: values.country, contact_number: values.contactNumber, timezone: values.timezone },
     });
     if (authError) {
       setProfileSaving(false);
@@ -80,17 +80,15 @@ export default function SettingsPage() {
     }
 
     let profileError: Error | null = null;
-    if (isNexarchApiConfigured()) {
-      try {
-        await nexarchApi.updateProfile({
-          full_name: values.fullName,
-          country: values.country,
-          contact_no: values.contactNumber,
-          timezone: values.timezone,
-        });
-      } catch (error: unknown) {
-        profileError = error instanceof Error ? error : new Error("Profile could not be saved");
-      }
+    try {
+      await profileService.update({
+        full_name: values.fullName,
+        country: values.country,
+        contact_no: values.contactNumber,
+        timezone: values.timezone,
+      });
+    } catch (error: unknown) {
+      profileError = error instanceof Error ? error : new Error("Profile could not be saved");
     }
     setProfileSaving(false);
     if (profileError) {
