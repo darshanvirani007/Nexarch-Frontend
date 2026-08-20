@@ -14,10 +14,13 @@ const ambientPalettes = [
   { name: "Espresso", background: "#e6ddd3", foreground: "#1e1712" },
 ] as const;
 
-const ROTATION_INTERVAL_MS = 10_000;
+const ROTATION_INTERVAL_MS = 5_000;
+const TRANSITION_DURATION_MS = 2_200;
+
+type PaletteTransition = { from: number; to: number; sequence: number };
 
 export function LoginShowcase() {
-  const [paletteIndex, setPaletteIndex] = useState(0);
+  const [paletteTransition, setPaletteTransition] = useState<PaletteTransition>({ from: 0, to: 0, sequence: 0 });
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -26,7 +29,11 @@ export function LoginShowcase() {
     const start = () => {
       if (interval || reducedMotion.matches || document.hidden) return;
       interval = setInterval(() => {
-        setPaletteIndex((current) => (current + 1) % ambientPalettes.length);
+        setPaletteTransition((current) => ({
+          from: current.to,
+          to: (current.to + 1) % ambientPalettes.length,
+          sequence: current.sequence + 1,
+        }));
       }, ROTATION_INTERVAL_MS);
     };
     const stop = () => {
@@ -48,20 +55,27 @@ export function LoginShowcase() {
     };
   }, []);
 
-  const palette = ambientPalettes[paletteIndex];
+  const fromPalette = ambientPalettes[paletteTransition.from];
+  const palette = ambientPalettes[paletteTransition.to];
   return (
     <aside
       className="relative hidden overflow-hidden border-l lg:flex lg:flex-col lg:justify-between lg:p-14"
       style={{
-        backgroundColor: palette.background,
+        backgroundColor: fromPalette.background,
         color: palette.foreground,
-        transition: "background-color 1400ms cubic-bezier(.2,.8,.2,1), color 1400ms cubic-bezier(.2,.8,.2,1)",
+        transition: `color ${TRANSITION_DURATION_MS}ms cubic-bezier(.22,1,.36,1)`,
       }}
     >
+      {paletteTransition.sequence > 0 && <div
+        key={paletteTransition.sequence}
+        aria-hidden="true"
+        className="login-palette-layer pointer-events-none absolute inset-0"
+        style={{ backgroundColor: palette.background, animationDuration: `${TRANSITION_DURATION_MS}ms` }}
+      />}
       <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full bg-white/25 blur-3xl" />
       <div className="relative flex items-center justify-between gap-6 text-sm font-medium">
         <span>Everything you’re building, one clear view.</span>
-        <span className="rounded-full border border-current/15 px-2.5 py-1 text-[10px] uppercase tracking-[.14em] opacity-55">{palette.name}</span>
+        <span key={paletteTransition.sequence} className="login-palette-label rounded-full border border-current/15 px-2.5 py-1 text-[10px] uppercase tracking-[.14em]">{palette.name}</span>
       </div>
       <div className="relative">
         <h2 className="max-w-xl text-5xl font-semibold leading-[1.05] tracking-[-.05em]">Your businesses.<br />Your accounts.<br />Your next moves.</h2>

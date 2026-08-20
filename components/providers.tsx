@@ -8,7 +8,7 @@ import { AuthSessionProvider } from "@/components/auth-session-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="nexarch-theme-runtime-v2">
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange={false} storageKey="nexarch-theme-runtime-v2">
       <AuthSessionProvider>
         <ThemePaletteProvider>
           {children}

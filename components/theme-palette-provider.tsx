@@ -42,7 +42,33 @@ export function ThemePaletteProvider({ children }: { children: React.ReactNode }
   const { user } = useAuthSession();
   const userIdRef = useRef<string | null>(null);
   const remoteQueueRef = useRef(Promise.resolve());
+  const appearanceTransitionTimerRef = useRef<number | null>(null);
   const [preferences, setPreferences] = useState<AppearancePreferences>(DEFAULT_APPEARANCE_PREFERENCES);
+
+  const transitionAppearance = useCallback((apply: () => void) => {
+    const root = document.documentElement;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      apply();
+      return;
+    }
+    if (appearanceTransitionTimerRef.current !== null) {
+      window.clearTimeout(appearanceTransitionTimerRef.current);
+    }
+    root.classList.add("appearance-transitioning");
+    void root.offsetWidth;
+    apply();
+    appearanceTransitionTimerRef.current = window.setTimeout(() => {
+      root.classList.remove("appearance-transitioning");
+      appearanceTransitionTimerRef.current = null;
+    }, 480);
+  }, []);
+
+  useEffect(() => () => {
+    if (appearanceTransitionTimerRef.current !== null) {
+      window.clearTimeout(appearanceTransitionTimerRef.current);
+    }
+    document.documentElement.classList.remove("appearance-transitioning");
+  }, []);
 
   const persist = useCallback((nextPreferences: AppearancePreferences) => {
     const userId = userIdRef.current;
@@ -85,13 +111,13 @@ export function ThemePaletteProvider({ children }: { children: React.ReactNode }
   }, [applyPreferences, persist, user?.id]);
 
   const setPalette = useCallback((nextPalette: ThemePalette) => {
-    applyPalette(nextPalette);
+    transitionAppearance(() => applyPalette(nextPalette));
     setPreferences((current) => {
       const next = { ...current, palette: nextPalette };
       persist(next);
       return next;
     });
-  }, [persist]);
+  }, [persist, transitionAppearance]);
 
   const setDensity = useCallback((nextDensity: Density) => {
     applyDensity(nextDensity);
@@ -104,13 +130,13 @@ export function ThemePaletteProvider({ children }: { children: React.ReactNode }
 
   const setTheme = useCallback((nextTheme: AppearanceTheme) => {
     if (!isAppearanceTheme(nextTheme)) return;
-    setNextTheme(nextTheme);
+    transitionAppearance(() => setNextTheme(nextTheme));
     setPreferences((current) => {
       const next = { ...current, theme: nextTheme };
       persist(next);
       return next;
     });
-  }, [persist, setNextTheme]);
+  }, [persist, setNextTheme, transitionAppearance]);
 
   return (
     <ThemePaletteContext.Provider value={{ ...preferences, resolvedTheme, setPalette, setDensity, setTheme }}>

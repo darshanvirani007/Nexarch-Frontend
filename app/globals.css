@@ -189,6 +189,15 @@ body {
   min-height: 100vh;
   letter-spacing: -.006em;
 }
+html.appearance-transitioning,
+html.appearance-transitioning body,
+html.appearance-transitioning body *,
+html.appearance-transitioning body *::before,
+html.appearance-transitioning body *::after {
+  transition-property: color, background-color, border-color, box-shadow, fill, stroke !important;
+  transition-duration: 420ms !important;
+  transition-timing-function: cubic-bezier(.22, 1, .36, 1) !important;
+}
 body::before {
   position: fixed;
   inset: 0;
@@ -283,6 +292,15 @@ button:active:not(:disabled), [role="button"]:active {
 }
 .mobile-nav-item-active::after { opacity: .72; transform: scaleX(1); }
 .page-content { animation: page-in var(--motion-page) var(--motion-ease) both; }
+.login-palette-layer {
+  animation-name: login-palette-fade;
+  animation-fill-mode: forwards;
+  animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+  will-change: opacity;
+}
+.login-palette-label {
+  animation: login-palette-label-in 700ms var(--motion-ease) 650ms both;
+}
 .page-title {
   text-wrap: balance;
   text-shadow: 0 1px 18px color-mix(in srgb, var(--foreground) 7%, transparent);
@@ -475,4 +493,14 @@ button:active:not(:disabled), [role="button"]:active {
   .page-content, .motion-list > *, .status-dot-active, .task-check-icon, .nexarch-loader-shell, .nexarch-loader-mark, .nexarch-loader-signal, .nexarch-loader-orbit, .nexarch-loader-satellite, .nexarch-loader-dots i, .nexarch-inline-loader { animation: none !important; }
   .interactive-card:hover, article.panel:hover, button:active:not(:disabled), [role="button"]:active { transform: none !important; }
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
+@keyframes login-palette-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes login-palette-label-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: .55; transform: translateY(0); }
 }
