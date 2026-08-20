@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, Eye, EyeOff, KeyRound, LockKeyhole, Pencil, Plu
 import { toast } from "sonner";
 import { Button, Field, inputClass, Modal, SectionHeading } from "@/components/ui";
 import { decryptVault, encryptVault, loadEncryptedVault, saveEncryptedVault, type EncryptedVault, type VaultKey } from "@/lib/key-vault";
+import { protectedPasswordInputProps, strongPasswordSchema } from "@/lib/password-policy";
 
 export function BusinessKeyVault({ businessId }: { businessId: string }) {
   const [expanded, setExpanded] = useState(false);
@@ -20,7 +21,11 @@ export function BusinessKeyVault({ businessId }: { businessId: string }) {
 
   const unlock = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (password.length < 8) return toast.error("Enter at least 8 characters");
+    if (vault && password.length < 8) return toast.error("Enter at least 8 characters");
+    if (!vault) {
+      const parsed = strongPasswordSchema.safeParse(password);
+      if (!parsed.success) return toast.error(parsed.error.issues[0]?.message || "Enter a stronger password");
+    }
     try {
       setKeys(vault ? await decryptVault(vault, password) : []);
       setUnlockOpen(false);
@@ -40,6 +45,8 @@ export function BusinessKeyVault({ businessId }: { businessId: string }) {
   const submitKey = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!keys) return;
+    if (!name.trim()) return toast.error("Key name is required");
+    if (!value.trim()) return toast.error("Key value is required");
     const item = { id: editing?.id || crypto.randomUUID(), name: name.trim(), value: value.trim() };
     try {
       await save(editing ? keys.map((key) => key.id === editing.id ? item : key) : [...keys, item]);
@@ -99,7 +106,7 @@ export function BusinessKeyVault({ businessId }: { businessId: string }) {
         </div>
       )}
       <Modal open={unlockOpen} onOpenChange={setUnlockOpen} title={vault ? "Unlock key vault" : "Create key vault"} description="Your password encrypts and decrypts the keys locally. It is never saved or sent to the server.">
-        <form className="grid gap-4" onSubmit={unlock}><Field label="Dashboard password"><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className={inputClass} minLength={8} autoComplete="current-password" required /></Field><Button type="submit"><LockKeyhole className="size-4" /> {vault ? "Unlock" : "Create vault"}</Button></form>
+        <form className="grid gap-4" onSubmit={unlock}><Field label="Dashboard password"><input {...protectedPasswordInputProps} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className={inputClass} minLength={vault ? 8 : 10} autoComplete={vault ? "current-password" : "new-password"} required /></Field><Button type="submit"><LockKeyhole className="size-4" /> {vault ? "Unlock" : "Create vault"}</Button></form>
       </Modal>
       <Modal open={formOpen} onOpenChange={setFormOpen} title={editing ? "Edit key" : "Add key"} description="Name the credential and paste its secret value.">
         <form className="grid gap-4" onSubmit={submitKey}><Field label="Key name"><input value={name} onChange={(event) => setName(event.target.value)} className={inputClass} placeholder="OpenAI API key" required /></Field><Field label="Key value"><textarea value={value} onChange={(event) => setValue(event.target.value)} className={`${inputClass} min-h-24 font-mono`} placeholder="Paste key here" required /></Field><Button type="submit">{editing ? "Update key" : "Add key"}</Button></form>

@@ -14,6 +14,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isNexarchApiConfigured, nexarchApi } from "@/lib/api/client";
 import { PublicFooter } from "@/components/public-footer";
 import { LoginShowcase } from "@/components/login-showcase";
+import { protectedPasswordInputProps } from "@/lib/password-policy";
 
 type AuthMode = "login" | "forgot";
 type OAuthProvider = "google" | "apple";
@@ -123,7 +124,7 @@ export default function LoginPage() {
             <div className="relative"><Mail className="muted absolute left-3 top-3.5 size-4" /><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className={`${inputClass} pl-10`} placeholder="you@example.com" autoComplete="email" required /></div>
           </Field>
           {mode !== "forgot" && <Field label="Password">
-            <div className="relative"><KeyRound className="muted absolute left-3 top-3.5 size-4" /><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className={`${inputClass} pl-10`} minLength={8} autoComplete="current-password" required /></div>
+            <div className="relative"><KeyRound className="muted absolute left-3 top-3.5 size-4" /><input {...protectedPasswordInputProps} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className={`${inputClass} pl-10`} autoComplete="current-password" required /></div>
           </Field>}
           <Button type="submit" disabled={loading || loadingProvider !== null}>
             {loading && <InlineLoader />}{loading ? "Please wait…" : mode === "forgot" ? "Send reset instructions" : "Sign in"} {!loading && <ArrowRight className="size-4" />}

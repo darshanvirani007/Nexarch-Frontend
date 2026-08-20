@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { personalLinkKinds } from "./types";
 import { getPhoneCountry, validatePhoneForCountry } from "./phone-countries";
-import { timezoneValues } from "./timezones";
+import { isNexarchTimezone } from "./timezones";
+import { strongPasswordSchema } from "./password-policy";
 
 const optionalUrl = z
   .string()
@@ -29,7 +30,7 @@ const accountProfileSchema = z.object(accountProfileFields).superRefine((values,
 });
 
 export const signUpSchema = accountProfileSchema.safeExtend({
-  password: z.string().min(8, "Password must contain at least 8 characters").max(72, "Password is too long"),
+  password: strongPasswordSchema,
   confirmPassword: z.string(),
 }).refine((values) => values.password === values.confirmPassword, {
   message: "Passwords do not match",
@@ -37,11 +38,11 @@ export const signUpSchema = accountProfileSchema.safeExtend({
 });
 
 export const accountSettingsSchema = accountProfileSchema.safeExtend({
-  timezone: z.enum(timezoneValues),
+  timezone: z.string().refine(isNexarchTimezone, "Select a valid timezone"),
 });
 
 export const changePasswordSchema = z.object({
-  password: z.string().min(8, "Password must contain at least 8 characters").max(72, "Password is too long"),
+  password: strongPasswordSchema,
   confirmPassword: z.string(),
 }).refine((values) => values.password === values.confirmPassword, {
   message: "Passwords do not match",

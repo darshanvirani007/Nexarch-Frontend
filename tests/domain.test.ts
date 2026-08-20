@@ -8,7 +8,7 @@ import { coverageForStore, coveragePercentage, demoTrackingAlerts, freshness, ge
 import type { Task } from "../lib/types";
 
 describe("account sign-up", () => {
-  const validAccount = { email: "darshan@example.com", fullName: "Darshan Virani", country: "Ireland", contactNumber: "+353 87 123 4567", password: "secure-password", confirmPassword: "secure-password" };
+  const validAccount = { email: "darshan@example.com", fullName: "Darshan Virani", country: "Ireland", contactNumber: "+353 87 123 4567", password: "Secure-password1", confirmPassword: "Secure-password1" };
 
   it("accepts a complete matching account profile", () => {
     expect(signUpSchema.safeParse(validAccount).success).toBe(true);
@@ -26,8 +26,11 @@ describe("account sign-up", () => {
     expect(accountSettingsSchema.safeParse({ ...validAccount, timezone: "Europe/Dublin" }).success).toBe(true);
     expect(accountSettingsSchema.safeParse({ ...validAccount, timezone: "Asia/Kolkata" }).success).toBe(true);
     expect(accountSettingsSchema.safeParse({ ...validAccount, timezone: "Invalid/Timezone" }).success).toBe(false);
-    expect(changePasswordSchema.safeParse({ password: "new-password", confirmPassword: "new-password" }).success).toBe(true);
-    expect(changePasswordSchema.safeParse({ password: "new-password", confirmPassword: "wrong-password" }).success).toBe(false);
+    expect(changePasswordSchema.safeParse({ password: "New-password1", confirmPassword: "New-password1" }).success).toBe(true);
+    expect(changePasswordSchema.safeParse({ password: "New-password1", confirmPassword: "Wrong-password1" }).success).toBe(false);
+    expect(changePasswordSchema.safeParse({ password: "Onlyletters!", confirmPassword: "Onlyletters!" }).success).toBe(false);
+    expect(changePasswordSchema.safeParse({ password: "1234567890!", confirmPassword: "1234567890!" }).success).toBe(false);
+    expect(changePasswordSchema.safeParse({ password: "Letters1234", confirmPassword: "Letters1234" }).success).toBe(false);
   });
 });
 

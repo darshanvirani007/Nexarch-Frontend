@@ -1,13 +1,13 @@
 import { z } from "zod";
 import type { ProfileResponse } from "@/lib/api/mappers";
 import { createClient } from "./client";
-import { timezoneValues } from "@/lib/timezones";
+import { isNexarchTimezone } from "@/lib/timezones";
 
 const profileSchema = z.object({
   full_name: z.string().trim().max(160).nullable(),
   country: z.string().trim().max(100).nullable(),
   contact_no: z.string().trim().max(40).nullable(),
-  timezone: z.enum(timezoneValues),
+  timezone: z.string().refine(isNexarchTimezone, "Select a valid timezone"),
 });
 
 async function currentUser() {

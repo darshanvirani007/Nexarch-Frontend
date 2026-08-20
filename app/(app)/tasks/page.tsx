@@ -24,6 +24,7 @@ export default function TasksPage() {
   const { tasks, setTasks, jobApplications, setJobApplications } = useAppStore();
   const [open, setOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
   const [title, setTitle] = useState("");
   const [jobUrl, setJobUrl] = useState("");
   const requestedTab = searchParams.get("tab");
@@ -50,6 +51,13 @@ export default function TasksPage() {
     setJobApplications((items) => items.map((item) => item.id === id ? { ...item, status } : item));
     toast.success(`Application marked ${status.toLowerCase()}`);
   };
+  const openApplicationEditor = (application: JobApplication) => {
+    setEditingTask(null);
+    setEditingApplication(application);
+    setTitle(application.jobName);
+    setJobUrl(application.jobUrl);
+    setOpen(true);
+  };
   const removeApplication = (id: string) => {
     setJobApplications((items) => items.filter((item) => item.id !== id));
     toast.success("Job application deleted");
@@ -63,7 +71,7 @@ export default function TasksPage() {
         eyebrow={format(today, "EEEE, d MMMM")}
         title="Tasks"
         description="Turn important updates and ideas into clear next actions."
-        action={<Button onClick={() => { setEditingTask(null); setTitle(""); setJobUrl(""); setOpen(true); }}><Plus className="size-4" /> {actionLabel}</Button>}
+        action={<Button onClick={() => { setEditingTask(null); setEditingApplication(null); setTitle(""); setJobUrl(""); setOpen(true); }}><Plus className="size-4" /> {actionLabel}</Button>}
       />
 
       <div className="scrollbar-none mb-8 flex gap-1 overflow-x-auto rounded-2xl border bg-foreground/[.025] p-1.5" role="tablist" aria-label="Task types">
@@ -122,14 +130,15 @@ export default function TasksPage() {
           <div className="flex items-center gap-2">
             <SelectControl id={`job-status-${application.id}`} ariaLabel={`Status for ${application.jobName}`} value={application.status} onValueChange={(value) => updateApplicationStatus(application.id, value as JobApplication["status"])} options={["Pending", "Applied", "Accepted", "Rejected"]} className={`h-9 w-auto min-w-28 rounded-xl text-xs font-medium ${applicationStatusStyles[application.status]}`} />
             <a href={application.jobUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open ${application.jobName}`} className="muted rounded-lg p-2 transition hover:bg-foreground/5 hover:text-foreground"><ExternalLink className="size-4" /></a>
+            <button onClick={() => openApplicationEditor(application)} className="muted rounded-lg p-2 transition hover:bg-foreground/5 hover:text-foreground" aria-label={`Edit ${application.jobName}`}><Pencil className="size-4" /></button>
             <button onClick={() => removeApplication(application.id)} className="muted rounded-lg p-2 transition hover:bg-red-500/10 hover:text-red-500" aria-label={`Delete ${application.jobName}`}><Trash2 className="size-4" /></button>
           </div>
         </article>) : <div className="p-8 text-center"><p className="text-sm font-medium">No job applications yet</p><p className="muted mt-1 text-xs">Add a role and its job listing link to start tracking it.</p></div>}
       </div>}
-      <Modal open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) { setEditingTask(null); setTitle(""); setJobUrl(""); } }} title={editingTask ? "Edit task" : activeTab === "Daily tasks" ? "Add today’s task" : activeTab === "Tasks" ? "Add task" : "Add job application"} description={editingTask ? "Update the task name without changing its completion state." : activeTab === "Daily tasks" ? "Keep it short and focused." : activeTab === "Tasks" ? "Add something you want to keep track of." : "Save the role and listing link. New applications start as pending."}>
+      <Modal open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) { setEditingTask(null); setEditingApplication(null); setTitle(""); setJobUrl(""); } }} title={editingTask ? "Edit task" : editingApplication ? "Edit job application" : activeTab === "Daily tasks" ? "Add today’s task" : activeTab === "Tasks" ? "Add task" : "Add job application"} description={editingTask ? "Update the task name without changing its completion state." : editingApplication ? "Update the role name and job listing link without changing its status." : activeTab === "Daily tasks" ? "Keep it short and focused." : activeTab === "Tasks" ? "Add something you want to keep track of." : "Save the role and listing link. New applications start as pending."}>
         <form className="grid gap-4" onSubmit={(event) => {
           event.preventDefault();
-          if (!title.trim()) return;
+          if (!title.trim()) return toast.error(activeTab === "Job applications" ? "Job name is required" : "Task name is required");
           if (editingTask) {
             setTasks((items) => items.map((item) => item.id === editingTask.id ? { ...item, title: title.trim() } : item));
             toast.success("Task updated");
@@ -139,8 +148,26 @@ export default function TasksPage() {
             return;
           }
           if (activeTab === "Job applications") {
-            if (!jobUrl.trim()) return;
-            setJobApplications((items) => [{ id: crypto.randomUUID(), jobName: title.trim(), jobUrl: jobUrl.trim(), status: "Pending", createdAt: new Date().toISOString() }, ...items]);
+            let cleanJobUrl: string;
+            try {
+              const parsedUrl = new URL(jobUrl.trim());
+              if (!/^https?:$/.test(parsedUrl.protocol)) throw new Error("Unsupported protocol");
+              cleanJobUrl = parsedUrl.toString();
+            } catch {
+              return toast.error("Enter a valid job link beginning with http:// or https://");
+            }
+            if (editingApplication) {
+              setJobApplications((items) => items.map((item) => item.id === editingApplication.id
+                ? { ...item, jobName: title.trim(), jobUrl: cleanJobUrl }
+                : item));
+              toast.success("Job application updated");
+              setEditingApplication(null);
+              setTitle("");
+              setJobUrl("");
+              setOpen(false);
+              return;
+            }
+            setJobApplications((items) => [{ id: crypto.randomUUID(), jobName: title.trim(), jobUrl: cleanJobUrl, status: "Pending", createdAt: new Date().toISOString() }, ...items]);
             toast.success("Job application added as pending");
             setTitle("");
             setJobUrl("");
@@ -165,7 +192,7 @@ export default function TasksPage() {
             <input value={title} onChange={(event) => setTitle(event.target.value)} className={inputClass} placeholder={activeTab === "Daily tasks" ? "What needs doing today?" : activeTab === "Tasks" ? "What needs doing?" : "Product Designer at Nexarch"} required autoFocus />
           </Field>
           {activeTab === "Job applications" && <Field label="Job link"><input type="url" value={jobUrl} onChange={(event) => setJobUrl(event.target.value)} className={inputClass} placeholder="https://company.com/jobs/role" required /></Field>}
-          <Button type="submit">{editingTask ? "Save changes" : actionLabel}</Button>
+          <Button type="submit">{editingTask || editingApplication ? "Save changes" : actionLabel}</Button>
         </form>
       </Modal>
     </>

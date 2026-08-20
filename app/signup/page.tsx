@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -17,7 +17,9 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { signUpSchema } from "@/lib/validations";
 import { initializeUserAppearance } from "@/lib/appearance-preferences";
 import { PublicFooter } from "@/components/public-footer";
-import { getPhoneCountry, normalizePhoneForCountry, phoneCountries } from "@/lib/phone-countries";
+import { getPhoneCountry, getPhoneCountryByCode, normalizePhoneForCountry, phoneCountries } from "@/lib/phone-countries";
+import { detectBrowserTimezone } from "@/lib/timezones";
+import { passwordRequirements, protectedPasswordInputProps } from "@/lib/password-policy";
 
 type SignUpValues = z.input<typeof signUpSchema>;
 
@@ -26,11 +28,24 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
-  const { register, control, handleSubmit, setValue, clearErrors, formState: { errors } } = useForm<SignUpValues>({
+  const { register, control, handleSubmit, getValues, setValue, clearErrors, formState: { errors } } = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: { email: "", fullName: "", country: "", contactNumber: "", password: "", confirmPassword: "" },
   });
   const selectedCountry = getPhoneCountry(useWatch({ control, name: "country" }));
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/location-defaults", { signal: controller.signal, cache: "no-store" })
+      .then((response) => response.ok ? response.json() as Promise<{ countryCode: string | null }> : null)
+      .then((location) => {
+        if (!location?.countryCode || getValues("country")) return;
+        const country = getPhoneCountryByCode(location.countryCode);
+        if (country) setValue("country", country.name, { shouldValidate: true });
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [getValues, setValue]);
 
   const createAccount = handleSubmit(async (values) => {
     if (loading) return;
@@ -58,6 +73,7 @@ export default function SignUpPage() {
             full_name: values.fullName,
             country: values.country,
             contact_number: normalizePhoneForCountry(values.contactNumber, values.country),
+            timezone: detectBrowserTimezone(),
           },
         },
       });
@@ -133,8 +149,9 @@ export default function SignUpPage() {
               <Field label="Full name" error={errors.fullName?.message}><div className="relative"><UserRound className="muted absolute left-3 top-3.5 size-4" /><input {...register("fullName")} className={`${inputClass} pl-10`} placeholder="Your full name" autoComplete="name" /></div></Field>
               <Field label="Country" error={errors.country?.message}><Controller name="country" control={control} render={({ field }) => <SelectControl ariaLabel="Country" value={field.value} onValueChange={(country) => { field.onChange(country); setValue("contactNumber", "", { shouldValidate: false }); clearErrors("contactNumber"); }} placeholder="Select your country" options={phoneCountries.map(({ name, label }) => ({ value: name, label }))} />} /></Field>
               <div className="sm:col-span-2"><Field label="Mobile number" error={errors.contactNumber?.message}><div className="relative"><Phone className="muted absolute left-3 top-3.5 size-4" /><input {...register("contactNumber")} type="tel" className={`${inputClass} pl-10`} placeholder={selectedCountry?.placeholder || "Select a country first"} autoComplete="tel" inputMode="tel" disabled={!selectedCountry} /></div></Field></div>
-              <Field label="Password" error={errors.password?.message}><div className="relative"><KeyRound className="muted absolute left-3 top-3.5 size-4" /><input {...register("password")} type="password" className={`${inputClass} pl-10`} autoComplete="new-password" /></div></Field>
-              <Field label="Re-enter password" error={errors.confirmPassword?.message}><div className="relative"><KeyRound className="muted absolute left-3 top-3.5 size-4" /><input {...register("confirmPassword")} type="password" className={`${inputClass} pl-10`} autoComplete="new-password" /></div></Field>
+              <Field label="Password" error={errors.password?.message}><div className="relative"><KeyRound className="muted absolute left-3 top-3.5 size-4" /><input {...register("password")} {...protectedPasswordInputProps} type="password" className={`${inputClass} pl-10`} autoComplete="new-password" placeholder="10+ characters" /></div></Field>
+              <Field label="Re-enter password" error={errors.confirmPassword?.message}><div className="relative"><KeyRound className="muted absolute left-3 top-3.5 size-4" /><input {...register("confirmPassword")} {...protectedPasswordInputProps} type="password" className={`${inputClass} pl-10`} autoComplete="new-password" placeholder="Repeat your password" /></div></Field>
+              <p className="muted -mt-1 text-xs sm:col-span-2">{passwordRequirements}</p>
               <Button type="submit" className="mt-2 sm:col-span-2" disabled={loading}>{loading && <InlineLoader />}{loading ? "Creating account…" : "Create account"} {!loading && <ArrowRight className="size-4" />}</Button>
             </form>
 

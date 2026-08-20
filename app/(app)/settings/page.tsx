@@ -17,6 +17,7 @@ import { useThemePalette } from "@/components/theme-palette-provider";
 import { densityOptions, isDensity, isThemePalette, themePalettes } from "@/lib/theme-palettes";
 import { isAppearanceTheme } from "@/lib/appearance-preferences";
 import { timezoneOptions } from "@/lib/timezones";
+import { passwordRequirements, protectedPasswordInputProps } from "@/lib/password-policy";
 
 type AccountSettingsValues = z.input<typeof accountSettingsSchema>;
 type ChangePasswordValues = z.input<typeof changePasswordSchema>;
@@ -143,8 +144,9 @@ export default function SettingsPage() {
       <section>
         <SectionHeading title="Password" description="Set a new password without displaying or storing your existing password." />
         <form className="panel grid gap-4 rounded-[22px] p-6 sm:grid-cols-2" onSubmit={changePassword} noValidate>
-          <Field label="New password" error={passwordErrors.password?.message}><input {...registerPassword("password")} type="password" className={inputClass} autoComplete="new-password" placeholder="At least 8 characters" /></Field>
-          <Field label="Re-enter new password" error={passwordErrors.confirmPassword?.message}><input {...registerPassword("confirmPassword")} type="password" className={inputClass} autoComplete="new-password" placeholder="Repeat your password" /></Field>
+          <Field label="New password" error={passwordErrors.password?.message}><input {...registerPassword("password")} {...protectedPasswordInputProps} type="password" className={inputClass} autoComplete="new-password" placeholder="10+ characters" /></Field>
+          <Field label="Re-enter new password" error={passwordErrors.confirmPassword?.message}><input {...registerPassword("confirmPassword")} {...protectedPasswordInputProps} type="password" className={inputClass} autoComplete="new-password" placeholder="Repeat your password" /></Field>
+          <p className="muted -mt-1 text-xs sm:col-span-2">{passwordRequirements}</p>
           <Button type="submit" variant="secondary" className="sm:col-span-2 sm:justify-self-start" disabled={passwordSaving}><KeyRound className="size-4" /> {passwordSaving ? "Updating…" : "Update password"}</Button>
         </form>
       </section>

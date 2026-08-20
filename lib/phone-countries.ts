@@ -25,9 +25,14 @@ export const phoneCountries = getCountries()
   .sort((left, right) => left.name.localeCompare(right.name));
 
 const countryByName = new Map(phoneCountries.map((country) => [country.name, country]));
+const countryByCode = new Map(phoneCountries.map((country) => [country.code, country]));
 
 export function getPhoneCountry(countryName: string) {
   return countryByName.get(countryName);
+}
+
+export function getPhoneCountryByCode(countryCode: string) {
+  return countryByCode.get(countryCode.toUpperCase() as CountryCode);
 }
 
 export function validatePhoneForCountry(value: string, countryName: string) {
