@@ -9,7 +9,6 @@ import {
   SiBlogger, SiFiverr, SiGithub, SiLeetcode, SiLinkedin, SiMedium, SiOpenai,
   SiReddit, SiSupabase, SiUdemy, SiUpwork, SiVercel, SiYoutube,
 } from "react-icons/si";
-import { toast } from "sonner";
 import { PageHeader } from "@/components/app-shell";
 import { useAppStore } from "@/components/app-store";
 import { MotionList } from "@/components/motion";
@@ -138,10 +137,8 @@ export default function PersonalLinksPage() {
 
     if (editingLink) {
       setPersonalLinks((links) => links.map((link) => link.id === editingLink.id ? { ...link, ...values } : link));
-      toast.success("Link updated");
     } else {
       setPersonalLinks((links) => [{ id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...values }, ...links]);
-      toast.success("Link added to My Links");
     }
     setFormOpen(false);
     resetForm();
@@ -276,7 +273,6 @@ export default function PersonalLinksPage() {
           <Button variant="danger" onClick={() => {
             if (!deletingLink) return;
             setPersonalLinks((links) => links.filter((link) => link.id !== deletingLink.id));
-            toast.success("Link deleted");
             setDeletingLink(null);
           }}><Trash2 className="size-4" /> Delete link</Button>
         </div>
