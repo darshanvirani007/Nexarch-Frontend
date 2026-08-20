@@ -20,11 +20,12 @@ import { persistNewBusinessChildren } from "@/lib/api/business-persistence";
 import { myLinksService } from "@/lib/supabase/my-links";
 import { isDirectResource, ownedCrudService } from "@/lib/supabase/owned-crud";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { businessesService } from "@/lib/supabase/businesses";
 import {
   businessLinkRecords, businessSocialRecord, goalRecord, jobApplicationRecord, learningRecord, mapBusiness, mapGoal, mapJobApplication,
   mapLearning, mapPersonalLink, mapSyncedRecord, mapTask, mapDailyTask, personalLinkRecord,
-  preservePendingSocialVisibility, taskRecord, type BusinessLinkRow, type BusinessRow, type DailyTaskRow, type GoalRow,
-  type JobApplicationRow, type LearningRow, type SocialRow, type SyncedRecord,
+  preservePendingSocialVisibility, taskRecord, type DailyTaskRow, type GoalRow,
+  type JobApplicationRow, type LearningRow, type SyncedRecord,
   type TaskRow,
 } from "@/lib/api/mappers";
 
@@ -155,7 +156,7 @@ function businessBasePayload(business: Business) {
 export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const directLive = isSupabaseConfigured();
   const apiLive = isNexarchApiConfigured();
-  const [businesses, setBusinessesInternal] = useState<Business[]>(apiLive ? [] : demoBusinesses);
+  const [businesses, setBusinessesInternal] = useState<Business[]>(directLive ? [] : demoBusinesses);
   const businessesRef = useRef(businesses);
   const noteTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const [tasks, setTasks, hydrateTasks] = usePersistentCollection<Task>(directLive ? [] : demoTasks, taskRecord, directLive);
@@ -192,7 +193,8 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     let active = true;
     const loadDirectData = async () => {
       try {
-        const [linkRows, learningRows, goalRows, dailyTaskRows, taskRows, jobRows] = await Promise.all([
+        const [businessRows, linkRows, learningRows, goalRows, dailyTaskRows, taskRows, jobRows] = await Promise.all([
+          businessesService.list(),
           myLinksService.list(),
           ownedCrudService.list<LearningRow>("learning"),
           ownedCrudService.list<GoalRow>("goals"),
@@ -201,6 +203,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
           ownedCrudService.list<JobApplicationRow>("job-applications"),
         ]);
         if (!active) return;
+        hydrateBusinesses(businessRows.map(mapBusiness).sort((a, b) => a.displayOrder - b.displayOrder));
         hydratePersonalLinks(linkRows.filter((row) => row.is_active).map(mapPersonalLink));
         hydrateLearning(learningRows.map(mapLearning));
         hydrateGoals(goalRows.map(mapGoal));
@@ -217,28 +220,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    const loadBusinesses = async () => {
-      try {
-        await nexarchApi.get<unknown>("/health");
-        const [activeBusinesses, archivedBusinesses] = await Promise.all([
-          nexarchApi.list<BusinessRow>("businesses"),
-          nexarchApi.list<BusinessRow>("businesses", "?archived=1"),
-        ]);
-        const summaries = [...activeBusinesses, ...archivedBusinesses];
-        const detailed = await Promise.all(summaries.map((business) => nexarchApi.get<BusinessRow>(`/businesses/${business.id}`)));
-        if (active) hydrateBusinesses(detailed.map(mapBusiness).sort((a, b) => a.displayOrder - b.displayOrder));
-      } catch (error: unknown) {
-        if (!active) return;
-        const message = error instanceof Error ? error.message : "Businesses could not be loaded";
-        if (!directLive) setDataError(message);
-        toast.error(message);
-      } finally {
-        if (active && !directLive) setDataLoading(false);
-      }
-    };
-
     if (directLive) void loadDirectData();
-    if (apiLive) void loadBusinesses();
     return () => { active = false; };
   }, [apiLive, directLive, hydrateBusinesses, hydrateGoals, hydrateJobApplications, hydrateLearning, hydratePersonalLinks, hydrateTasks, reloadSequence]);
 
@@ -248,16 +230,16 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     const beforeIds = new Set(before.flatMap((link) => link.id ? [link.id] : []));
     const afterIds = new Set(after.flatMap((link) => link.id ? [link.id] : []));
     for (const link of before) {
-      if (link.id && !afterIds.has(link.id)) await nexarchApi.removeBusinessLink(next.id, link.id);
+      if (link.id && !afterIds.has(link.id)) await businessesService.removeBusinessLink(next.id, link.id);
     }
     for (const link of after) {
       const payload = { ...link };
       delete payload.id;
       if (link.id && beforeIds.has(link.id)) {
         const old = before.find((item) => item.id === link.id);
-        if (JSON.stringify(old) !== JSON.stringify(link)) await nexarchApi.updateBusinessLink<BusinessLinkRow>(next.id, link.id, payload);
+        if (JSON.stringify(old) !== JSON.stringify(link)) await businessesService.updateBusinessLink(next.id, link.id, payload);
       } else {
-        await nexarchApi.createBusinessLink<BusinessLinkRow>(next.id, payload);
+        await businessesService.createBusinessLink(next.id, payload);
       }
     }
   }, []);
@@ -265,13 +247,13 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const persistSocials = useCallback(async (previous: Business, next: Business) => {
     const before = new Map(previous.socials.map((social) => [social.id, social]));
     const after = new Map(next.socials.map((social) => [social.id, social]));
-    for (const [id] of before) if (!after.has(id)) await nexarchApi.removeSocial(next.id, id);
+    for (const [id] of before) if (!after.has(id)) await businessesService.removeSocial(next.id, id);
     for (const [id, social] of after) {
       const payload = businessSocialRecord(social, next.socials.indexOf(social));
       const old = before.get(id);
-      if (!old) await nexarchApi.createSocial<SocialRow>(next.id, payload);
+      if (!old) await businessesService.createSocial(next.id, payload);
       else if (JSON.stringify(businessSocialRecord(old, previous.socials.indexOf(old))) !== JSON.stringify(payload)) {
-        await nexarchApi.updateSocial<SocialRow>(next.id, id, payload);
+        await businessesService.updateSocial(next.id, id, payload);
       }
     }
   }, []);
@@ -284,17 +266,17 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       displayOrder: businessesRef.current.length,
       websiteStatus: "unknown", isActive: true,
     };
-    if (!apiLive) {
+    if (!directLive) {
       hydrateBusinesses([...businessesRef.current, optimistic]);
       return { business: optimistic };
     }
-    const row = await nexarchApi.create<BusinessRow>("businesses", businessBasePayload(optimistic));
+    const row = await businessesService.create(businessBasePayload(optimistic));
     const draft = { ...optimistic, id: row.id, displayOrder: row.display_order };
-    const childResult = await persistNewBusinessChildren(draft, nexarchApi);
+    const childResult = await persistNewBusinessChildren(draft, businessesService);
     let created = mapBusiness({ ...row, links: [], social_links: [], website_checks: [], note: null });
     let refreshFailed = false;
     try {
-      created = mapBusiness(await nexarchApi.get<BusinessRow>(`/businesses/${row.id}`));
+      created = mapBusiness(await businessesService.get(row.id));
     } catch {
       refreshFailed = true;
     }
@@ -305,43 +287,51 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         ? "Business created, but its saved details could not be refreshed. Reload the page to check them."
         : undefined;
     return { business: created, warning };
-  }, [apiLive, hydrateBusinesses]);
+  }, [directLive, hydrateBusinesses]);
 
   const updateBusiness = useCallback<Store["updateBusiness"]>((id, patch) => {
     const previous = businessesRef.current.find((item) => item.id === id);
     if (!previous) return;
     const next = { ...previous, ...patch };
     hydrateBusinesses(businessesRef.current.map((item) => item.id === id ? next : item));
-    if (!apiLive) return;
+    if (!directLive) return;
 
     if (Object.keys(patch).length === 1 && Object.hasOwn(patch, "notes")) {
       const existing = noteTimersRef.current.get(id);
       if (existing) clearTimeout(existing);
       noteTimersRef.current.set(id, setTimeout(() => {
         noteTimersRef.current.delete(id);
-        void nexarchApi.saveBusinessNote(id, next.notes).catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Notes could not be saved"));
+        void businessesService.saveBusinessNote(id, next.notes).catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Notes could not be saved"));
       }, 500));
       return;
     }
 
     void (async () => {
       if (JSON.stringify(businessBasePayload(previous)) !== JSON.stringify(businessBasePayload(next))) {
-        await nexarchApi.update<BusinessRow>("businesses", id, businessBasePayload(next));
+        await businessesService.update(id, businessBasePayload(next));
       }
       if (JSON.stringify(businessLinkRecords(previous)) !== JSON.stringify(businessLinkRecords(next))) await persistLinks(previous, next);
       if (JSON.stringify(previous.socials) !== JSON.stringify(next.socials)) await persistSocials(previous, next);
-      if (previous.notes !== next.notes) await nexarchApi.saveBusinessNote(id, next.notes);
+      if (previous.notes !== next.notes) await businessesService.saveBusinessNote(id, next.notes);
       const refreshed = preservePendingSocialVisibility(
-        mapBusiness(await nexarchApi.get<BusinessRow>(`/businesses/${id}`)),
+        mapBusiness(await businessesService.get(id)),
         next,
       );
       hydrateBusinesses(businessesRef.current.map((item) => item.id === id ? refreshed : item));
     })().catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Business changes could not be saved"));
-  }, [apiLive, hydrateBusinesses, persistLinks, persistSocials]);
+  }, [directLive, hydrateBusinesses, persistLinks, persistSocials]);
 
   const removeBusiness = useCallback<Store["removeBusiness"]>((id) => {
-    hydrateBusinesses(businessesRef.current.filter((item) => item.id !== id));
-    if (apiLive) void nexarchApi.remove("businesses", id).catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Business could not be deleted"));
+    if (!apiLive) {
+      toast.error("Business deletion is temporarily unavailable because secure cleanup requires the Nexarch API.");
+      return;
+    }
+    const previous = businessesRef.current;
+    hydrateBusinesses(previous.filter((item) => item.id !== id));
+    void nexarchApi.remove("businesses", id).catch((error: unknown) => {
+      hydrateBusinesses(previous);
+      toast.error(error instanceof Error ? error.message : "Business could not be deleted");
+    });
   }, [apiLive, hydrateBusinesses]);
 
   const moveBusiness = useCallback<Store["moveBusiness"]>((id, direction) => {
@@ -352,8 +342,8 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     [sorted[from], sorted[to]] = [sorted[to], sorted[from]];
     const next = sorted.map((item, index) => ({ ...item, displayOrder: index }));
     hydrateBusinesses(next);
-    if (apiLive) void Promise.all(next.map((business) => nexarchApi.update<BusinessRow>("businesses", business.id, { display_order: business.displayOrder }))).catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Business order could not be saved"));
-  }, [apiLive, hydrateBusinesses]);
+    if (directLive) void Promise.all(next.map((business) => businessesService.update(business.id, { display_order: business.displayOrder }))).catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Business order could not be saved"));
+  }, [directLive, hydrateBusinesses]);
 
   const setStatus = useCallback<Store["setStatus"]>((businessId, status, responseTimeMs, httpStatusCode, checkedAt) => {
     hydrateBusinesses(businessesRef.current.map((item) => item.id === businessId ? {

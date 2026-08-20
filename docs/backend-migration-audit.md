@@ -134,3 +134,7 @@ Direct data and Laravel business data now load independently. The global applica
 ## Phase 3 implementation note
 
 Profile loading and profile upsert now use the authenticated Supabase client and the existing `profiles.id = auth.uid()` RLS policies. Email and password changes remain correctly handled by Supabase Auth. The profile constraint migration preserves Laravel's field-length and timezone rules at the database boundary. No Laravel files or routes were changed; they remain available for rollback until an explicitly authorized backend-cleanup phase.
+
+## Phase 4 implementation note
+
+Businesses, business links, social links, and notes now use direct authenticated Supabase access. One nested PostgREST query replaces the prior health check, two business lists, and one Laravel detail request per business. Existing parent-ownership RLS remains authoritative for child writes. Business deletion intentionally remains on Laravel because it transactionally removes pgVault secrets; the UI refuses deletion if that secure API is unavailable and restores optimistic state when deletion fails. Manual website checking also remains on Laravel pending the Edge Function phase.
