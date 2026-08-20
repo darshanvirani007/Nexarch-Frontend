@@ -3,7 +3,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { PublicFooter } from "@/components/public-footer";
 
 const controller = process.env.NEXT_PUBLIC_PRIVACY_CONTROLLER_NAME || "Nexarch";
-const privacyEmail = process.env.NEXT_PUBLIC_PRIVACY_EMAIL || "privacy@nexarchapp.com";
+const privacyEmail = process.env.NEXT_PUBLIC_PRIVACY_EMAIL || "nexarchapp@outlook.com";
 const controllerAddress = process.env.NEXT_PUBLIC_PRIVACY_ADDRESS || "Ireland";
 
 export default function PrivacyPage() {
@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <article className="mx-auto max-w-3xl">
       <Link href="/" className="mb-12 flex items-center gap-3"><BrandMark /><span className="font-semibold">Nexarch</span></Link>
       <p className="muted text-xs font-semibold uppercase tracking-[.16em]">Effective 20 August 2026</p>
-      <h1 className="mt-3 text-4xl font-semibold tracking-tight">Privacy notice</h1>
+      <h1 className="mt-3 text-4xl font-semibold tracking-tight">Privacy policy</h1>
       <p className="muted mt-4 leading-relaxed">This notice explains how {controller}, {controllerAddress}, handles personal data when you use Nexarch. Contact <a className="text-foreground underline" href={`mailto:${privacyEmail}`}>{privacyEmail}</a> about privacy or data-protection requests.</p>
 
       <div className="mt-10 space-y-9 text-sm leading-7">

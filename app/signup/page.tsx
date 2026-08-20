@@ -153,7 +153,7 @@ export default function SignUpPage() {
               <Field label="Re-enter password" error={errors.confirmPassword?.message}><div className="relative"><KeyRound className="muted absolute left-3 top-3.5 size-4" /><input {...register("confirmPassword")} {...protectedPasswordInputProps} type="password" className={`${inputClass} pl-10`} autoComplete="new-password" placeholder="Repeat your password" /></div></Field>
               <p className="muted -mt-1 text-xs sm:col-span-2">{passwordRequirements}</p>
               <Button type="submit" className="mt-2 sm:col-span-2" disabled={loading}>{loading && <InlineLoader />}{loading ? "Creating account…" : "Create account"} {!loading && <ArrowRight className="size-4" />}</Button>
-              <p className="muted text-center text-xs leading-relaxed sm:col-span-2">We use your details to create and operate your private workspace. Read our <Link href="/privacy" className="font-medium text-foreground underline underline-offset-4">Privacy Notice</Link>.</p>
+              <p className="muted text-center text-xs leading-relaxed sm:col-span-2">We use your details to create and operate your private workspace. Read our <Link href="/privacy" className="font-medium text-foreground underline underline-offset-4">Privacy Policy</Link>.</p>
             </form>
 
             <p className="muted mt-6 text-sm">Already have an account? <Link href="/login" className="font-medium text-foreground hover:opacity-70">Sign in</Link></p>

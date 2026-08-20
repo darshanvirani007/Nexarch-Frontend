@@ -1,6 +1,6 @@
 # GDPR production checklist
 
-This is an engineering and operations checklist, not a legal certification. The privacy notice must match Nexarch's real processing and must be reviewed whenever the product, providers, or data use changes.
+This is an engineering and operations checklist, not a legal certification. The privacy policy must match Nexarch's real processing and must be reviewed whenever the product, providers, or data use changes.
 
 ## Required before production
 
@@ -18,7 +18,7 @@ This is an engineering and operations checklist, not a legal certification. The 
 - Collect only fields required for a defined purpose. Optional fields should remain optional.
 - Do not add analytics, advertising pixels, session replay, or non-essential cookies until prior consent, rejection, withdrawal, and consent records are implemented.
 - Do not log passwords, access tokens, development-key secrets, request bodies, or unnecessary personal data.
-- When adding a provider or new use of data, update the processing inventory, contracts, retention schedule, and privacy notice before release.
+- When adding a provider or new use of data, update the processing inventory, contracts, retention schedule, and privacy policy before release.
 - Test RLS and account erasure after every schema change. Account deletion must remove database rows and server-side vault secrets; provider backups follow the documented backup schedule.
 
 ## Rights-request workflow
